@@ -7,8 +7,18 @@ import javax.jdo.annotations.PersistenceCapable;
 import com.google.gwt.user.client.rpc.IsSerializable;
 
 /**
- * Used to contain the entire document along with the locking primitives
- * necessary to modify it.
+ * Wrapper class for UnlockedDocuments and LockedDocuments, with all the methods
+ * available to either. Throws an Exception if a method is invoked while 'doc'
+ * is something other than an UnlockedDocument or LockedDocument, or if a
+ * method found only in LockedDocument is called while 'doc' is an
+ * UnlockedDocument. It also contains the following two methods:
+ *     - unlock(): Unlike the version in LockedDocument, this does not return
+ *                 an UnlockedDocument and instead returns nothing. It sets
+ *                 'doc' to the UnlockedDocument returned by 'doc.unlock()'.
+ *     - isLocked(): Returns 'true' if 'doc' is a LockedDocument and 'false' if
+ *                   it is an UnlockedDocument.
+ *     - getDocumentMetaData(): Returns the corresponding DocumentMetadata for
+ *                              'doc'.
  */
 @PersistenceCapable
 public class Document implements IsSerializable {
