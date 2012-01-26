@@ -11,12 +11,9 @@ import com.google.gwt.user.client.rpc.IsSerializable;
  * available to either. Throws an Exception if a method is invoked while 'doc'
  * is something other than an UnlockedDocument or LockedDocument, or if a
  * method found only in LockedDocument is called while 'doc' is an
- * UnlockedDocument. It also contains the following two methods:
- *     - unlock(): Unlike the version in LockedDocument, this does not return
- *                 an UnlockedDocument and instead returns nothing. It sets
- *                 'doc' to the UnlockedDocument returned by 'doc.unlock()'.
+ * UnlockedDocument. It also contains the following three methods:
  *     - lock(): Locks an UnlockedDocument, given values for 'lockedBy' and
- *               'lockedUntil'.
+ *               'lockedUntil'. Returns the new LockedDocument.
  *     - isLocked(): Returns 'true' if 'doc' is a LockedDocument and 'false' if
  *                   it is an UnlockedDocument.
  *     - getDocumentMetaData(): Returns the corresponding DocumentMetadata for
@@ -105,24 +102,31 @@ public class Document implements IsSerializable {
 					"UnlockedDocument or LockedDocument.");
 	}
 	
-	public void unlock() throws Exception {
+	public UnlockedDocument unlock() throws Exception {
 		if(doc instanceof UnlockedDocument)
 			throw new Exception("Document: 'doc' is UnlockedDocument, so " +
 					"cannot invoke 'unlock()'.");
 		else if(doc instanceof LockedDocument)
+		{
 			doc = ((LockedDocument) doc).unlock();
+		    return (UnlockedDocument)doc;
+		}
 		else
 			throw new Exception("Document: 'doc' does not point to an " +
 					"UnlockedDocument or LockedDocument.");
 	}
 	
-	public void lock(String lockedBy, Date lockedUntil) throws Exception {
+	public LockedDocument lock(String lockedBy, Date lockedUntil)
+			throws Exception, LockUnavailable {
 		if(doc instanceof UnlockedDocument)
+		{
 			doc = new LockedDocument(lockedBy, lockedUntil, this.getKey(), 
 					this.getTitle(), this.getContents());
+			return (LockedDocument)doc;
+		}
 		else if(doc instanceof LockedDocument)
-			throw new Exception("Document: 'doc' is LockedDocument, so " +
-					"cannot invoke 'lock()'.");
+			throw new LockUnavailable("Document: 'doc' is already locked, " +
+					"so cannot invoke 'lock()'.");
 		else
 			throw new Exception("Document: 'doc' does not point to an " +
 					"UnlockedDocument or LockedDocument.");
