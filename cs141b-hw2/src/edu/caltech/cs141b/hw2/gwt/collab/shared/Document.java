@@ -15,6 +15,8 @@ import com.google.gwt.user.client.rpc.IsSerializable;
  *     - unlock(): Unlike the version in LockedDocument, this does not return
  *                 an UnlockedDocument and instead returns nothing. It sets
  *                 'doc' to the UnlockedDocument returned by 'doc.unlock()'.
+ *     - lock(): Locks an UnlockedDocument, given values for 'lockedBy' and
+ *               'lockedUntil'.
  *     - isLocked(): Returns 'true' if 'doc' is a LockedDocument and 'false' if
  *                   it is an UnlockedDocument.
  *     - getDocumentMetaData(): Returns the corresponding DocumentMetadata for
@@ -109,6 +111,18 @@ public class Document implements IsSerializable {
 					"cannot invoke 'unlock()'.");
 		else if(doc instanceof LockedDocument)
 			doc = ((LockedDocument) doc).unlock();
+		else
+			throw new Exception("Document: 'doc' does not point to an " +
+					"UnlockedDocument or LockedDocument.");
+	}
+	
+	public void lock(String lockedBy, Date lockedUntil) throws Exception {
+		if(doc instanceof UnlockedDocument)
+			doc = new LockedDocument(lockedBy, lockedUntil, this.getKey(), 
+					this.getTitle(), this.getContents());
+		else if(doc instanceof LockedDocument)
+			throw new Exception("Document: 'doc' is LockedDocument, so " +
+					"cannot invoke 'lock()'.");
 		else
 			throw new Exception("Document: 'doc' does not point to an " +
 					"UnlockedDocument or LockedDocument.");
