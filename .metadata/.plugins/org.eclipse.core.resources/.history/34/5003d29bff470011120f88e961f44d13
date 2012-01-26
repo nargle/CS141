@@ -1,0 +1,58 @@
+package edu.caltech.cs141b.hw2.gwt.collab.shared;
+
+import java.io.Serializable;
+import java.util.Date;
+
+import javax.jdo.annotations.PersistenceCapable;
+
+import com.google.gwt.user.client.rpc.IsSerializable;
+
+/**
+ * Used to contain the entire document along with the locking primitives
+ * necessary to modify it.
+ */
+@PersistenceCapable
+public class Document implements IsSerializable {
+
+	private IsSerializable doc;
+	
+	public Document(UnlockedDocument doc) {
+		this.doc = doc;
+	}
+
+	public String getKey() {
+		if(doc instanceof UnlockedDocument)
+			return ((UnlockedDocument)doc).getKey();
+		else
+			return ((LockedDocument)doc).getKey();
+	}
+
+	public String getTitle() {
+		return title;
+	}
+	
+	public void setTitle(String documentTitle) {
+		this.title = documentTitle;
+	}
+
+	public String getContents() {
+		return contents;
+	}
+
+	public void setContents(String documentContents) {
+		this.contents = documentContents;
+	}
+
+	public String getLockedBy() {
+		return lockedBy;
+	}
+
+	public Date getLockedUntil() {
+		return lockedUntil;
+	}
+	
+	public UnlockedDocument unlock() {
+		return new UnlockedDocument(key, title, contents);
+	}
+}
+
