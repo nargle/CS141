@@ -30,7 +30,13 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 		CollaboratorService {
 	
 	private static final Logger log = Logger.getLogger(CollaboratorServiceImpl.class.toString());
-
+	
+	/**
+	 * Used to get a list of the currently available documents by using a
+	 * PersistenceManager object and an iterator.
+	 * 
+	 * @return a list of the metadata of the currently available documents
+	 */
 	@Override
 	public List<DocumentMetadata> getDocumentList() {
         PersistenceManagerFactory pmf = JDOHelper.getPersistenceManagerFactory();
@@ -43,12 +49,12 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
             
             Extent<Document> e = pm.getExtent(Document.class, true);
             Iterator<Document> iter = e.iterator();
-            while (iter.hasNext())
+            while (iter.hasNext()) //Iterate through stored Document objects
             {
                 Document document = (Document) iter.next();
                 DocumentMetadata documentMetadata = 
                 		new DocumentMetadata(document.getKey(), 
-                				document.getTitle());
+                				document.getTitle()); //Create metadata for doc
                 documentList.add(documentMetadata);
             }
             
@@ -68,21 +74,29 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         
         return documentList;
 	}
-
+	
+	/**
+	 * Used to lock an existing document for editing.
+	 * 
+	 * @param documentKey the key of the document to lock
+	 * @return a LockedDocument object containing the current document state
+	 *         and the locking primites necessary to save the document
+	 * @throws LockUnavailable if a lock cannot be obtained
+	 */
 	@Override
 	public LockedDocument lockDocument(String documentKey)
 			throws LockUnavailable {
 	    PersistenceManagerFactory pmf = JDOHelper.getPersistenceManagerFactory();
 	    PersistenceManager pm = pmf.getPersistenceManager();
 	    Transaction tx = pm.currentTransaction();
-	    LockedDocument lockedDocument = null;
+	    LockedDocument lockedDocument = null; //LockedDocument to be returned
 	    
 	    try {
 	        tx.begin();
 	        Document document = pm.getObjectById(Document.class, documentKey);
 	        
 	        Date currDate = new Date();
-	        // Sets time to 30,000 milliseconds beyond the current date
+	        // Sets timeout to 30,000 milliseconds beyond the current date
 	        currDate.setTime(currDate.getTime() + 30000);
 	        
 	        lockedDocument =
@@ -106,6 +120,13 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	    return lockedDocument;
 	}
 
+	/**
+	 * Used to retrieve a document in read-only mode.
+	 * 
+	 * @param documentKey the key of the documen to read
+	 * @return an UnlockedDocument object which contains the entire document
+	 *         but without any locking primitives
+	 */
 	@Override
 	public UnlockedDocument getDocument(String documentKey) {
         PersistenceManagerFactory pmf = JDOHelper.getPersistenceManagerFactory();
@@ -136,6 +157,16 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	    return unlockedDocument;
 	}
 
+	/**
+	 * Used to save a currently locked document.
+	 * 
+	 * @param doc the LockedDocument object returned by lockDocument(), with
+	 *         the document properties (but not the locking primitives)
+	 *         potentially modified
+	 * @return the read-only version of the saved document
+	 * @throws LockExpired if the locking primitives in the supplied
+	 *         LockedDocument object cannot be used to modify the document
+	 */
 	@Override
 	public UnlockedDocument saveDocument(LockedDocument doc)
 			throws LockExpired {
@@ -156,15 +187,15 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	            		pm.getObjectById(Document.class, doc.getKey());
 	            
 	            document.setTitle(doc.getTitle());
-	            document.setContents(doc.getContents());
+	            document.setContents(doc.getContents()); //Update contents
 	            unlockedDocument = document.unlock();
-	            }
+	        }
 	        
-	        else {
+	        else { //Document does not exist in storage already
 	        	unlockedDocument = new UnlockedDocument(doc.getKey(), 
         				doc.getTitle(), doc.getContents());
 	            Document document = new Document(unlockedDocument);
-	            pm.makePersistent(document);
+	            pm.makePersistent(document); //Save new document
 	        }
 	        
 	        tx.commit();
@@ -184,6 +215,15 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	    return unlockedDocument;
 	}
 	
+	/**
+	 * Used to release a lock that is no longer needed without saving.
+	 * 
+	 * @param doc the LockedDocument object returned by lockDocument(); any
+	 *         modifications made to the document properties in this case are
+	 *         ignored
+	 * @throws LockExpired if the locking primitives in the supplied
+	 *         LockedDocument object cannot be used to release the lock
+	 */	
 	@Override
 	public void releaseLock(LockedDocument doc) throws LockExpired {
         PersistenceManagerFactory pmf = JDOHelper.getPersistenceManagerFactory();
@@ -244,7 +284,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         			"happened.");
             }
         
-        return false;
+        return false; //Document corresponding to doc not found
 	}
 
 }

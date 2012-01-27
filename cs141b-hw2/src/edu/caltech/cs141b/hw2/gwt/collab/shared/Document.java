@@ -22,12 +22,23 @@ import com.google.gwt.user.client.rpc.IsSerializable;
 @PersistenceCapable
 public class Document implements IsSerializable {
 
-	private IsSerializable doc;
+	private IsSerializable doc; //either an UnlockedDocument or a LockedDocument
 	
+	/**
+	 * Initialize 'doc' to an UnlockedDocument object.
+	 * 
+	 * @param doc the UnlockedDocument
+	 */
 	public Document(UnlockedDocument doc) {
 		this.doc = doc;
 	}
-
+	
+	/**
+	 * Used to access the key for the current 'doc' object.
+	 * 
+	 * @return the key for 'doc', which is a String
+	 * @throws Exception if 'doc' is not a valid document type
+	 */
 	public String getKey() throws Exception {
 		if(doc instanceof UnlockedDocument)
 			return ((UnlockedDocument)doc).getKey();
@@ -38,6 +49,12 @@ public class Document implements IsSerializable {
 					"UnlockedDocument or LockedDocument.");
 	}
 
+	/**
+	 * Used to access the title for the current 'doc' object.
+	 * 
+	 * @return the title for 'doc', which is a String
+	 * @throws Exception if 'doc' is not a valid document type
+	 */
 	public String getTitle() throws Exception {
 		if(doc instanceof UnlockedDocument)
 			return ((UnlockedDocument)doc).getTitle();
@@ -48,6 +65,13 @@ public class Document implements IsSerializable {
 					"UnlockedDocument or LockedDocument.");
 	}
 	
+	/**
+	 * Used to set the title for the current 'doc' object.
+	 * 
+	 * @param documentTitle, the new title of the 'doc' object
+	 * @throws Exception if 'doc' is not a LockedDocument or if it
+	 *         is not a valid document type
+	 */
 	public void setTitle(String documentTitle) throws Exception {
 		if(doc instanceof UnlockedDocument)
 			throw new Exception("Document: 'doc' is UnlockedDocument, so " +
@@ -59,6 +83,12 @@ public class Document implements IsSerializable {
 					"UnlockedDocument or LockedDocument.");
 	}
 
+	/**
+	 * Used to access the contents of the current 'doc' object.
+	 * 
+	 * @return the contents of the 'doc' object
+	 * @throws Exception if 'doc' is not a valid document type
+	 */
 	public String getContents() throws Exception {
 		if(doc instanceof UnlockedDocument)
 			return ((UnlockedDocument)doc).getContents();
@@ -69,6 +99,12 @@ public class Document implements IsSerializable {
 					"UnlockedDocument or LockedDocument.");
 	}
 
+	/**
+	 * Used to set the contents of the current 'doc' object.
+	 * 
+	 * @param documentContents, the new contents of 'doc'
+	 * @throws Exception if 'doc' is not a valid document type
+	 */
 	public void setContents(String documentContents) throws Exception {
 		if(doc instanceof UnlockedDocument)
 			throw new Exception("Document: 'doc' is UnlockedDocument, so " +
@@ -80,6 +116,13 @@ public class Document implements IsSerializable {
 					"UnlockedDocument or LockedDocument.");
 	}
 
+	/**
+	 * Used to access the lockedBy field of a LockedDocument 'doc'.
+	 * 
+	 * @return the lockedBy info from 'doc'
+	 * @throws Exception if 'doc' is not a LockedDocument or if
+	 *         it is not a valid document type
+	 */
 	public String getLockedBy() throws Exception {
 		if(doc instanceof UnlockedDocument)
 			throw new Exception("Document: 'doc' is UnlockedDocument, so " +
@@ -91,6 +134,13 @@ public class Document implements IsSerializable {
 					"UnlockedDocument or LockedDocument.");
 	}
 
+	/**
+	 * Used to access the lockedUntil field of a LockedDocument 'doc'.
+	 * 
+	 * @return the lockedUntil info from 'doc'
+	 * @throws Exception if 'doc' is not a LockedDocument or if
+	 *         it is not a valid document type
+	 */
 	public Date getLockedUntil() throws Exception {
 		if(doc instanceof UnlockedDocument)
 			throw new Exception("Document: 'doc' is UnlockedDocument, so " +
@@ -102,6 +152,13 @@ public class Document implements IsSerializable {
 					"UnlockedDocument or LockedDocument.");
 	}
 	
+	/**
+	 * Used to unlock a LockedDocument 'doc'.
+	 * 
+	 * @return an UnlockedDocument version of the 'doc' document
+	 * @throws Exception if 'doc' is not a LockedDocument or if
+	 *         it is not a valid document type
+	 */
 	public UnlockedDocument unlock() throws Exception {
 		if(doc instanceof UnlockedDocument)
 			throw new Exception("Document: 'doc' is UnlockedDocument, so " +
@@ -116,6 +173,16 @@ public class Document implements IsSerializable {
 					"UnlockedDocument or LockedDocument.");
 	}
 	
+	/**
+	 * Used to lock an UnlockedDocument 'doc'.
+	 * 
+	 * @param lockedBy, the information identifying the client requesting
+	 *        the lock
+	 * @param lockedUntil, the lock expiration Date 
+	 * @return a LockedDocument version of the 'doc' document
+	 * @throws Exception if 'doc' is not an UnlockedDocument or if
+	 *         it is not a valid document type
+	 */
 	public LockedDocument lock(String lockedBy, Date lockedUntil)
 			throws Exception, LockUnavailable {
 		if(doc instanceof UnlockedDocument)
@@ -132,6 +199,12 @@ public class Document implements IsSerializable {
 					"UnlockedDocument or LockedDocument.");
 	}
 	
+	/**
+	 * Used to determine whether 'doc' is currently locked.
+	 * 
+	 * @return true if the 'doc' document is locked, false otherwise
+	 * @throws Exception if 'doc' is not a valid document type
+	 */
 	public boolean isLocked() throws Exception {
 		if(doc instanceof UnlockedDocument)
 			return false;
@@ -142,6 +215,12 @@ public class Document implements IsSerializable {
 					"UnlockedDocument or LockedDocument.");
 	}
 	
+	/**
+	 * Used to obtain the metadata information of the 'doc' document.
+	 * 
+	 * @return a DocumentMetadata object containing the key and title
+	 *         of the 'doc' document.
+	 */
 	public DocumentMetadata getDocumentMetaData() throws Exception {
 		return new DocumentMetadata(this.getKey(), this.getTitle());
 	}
