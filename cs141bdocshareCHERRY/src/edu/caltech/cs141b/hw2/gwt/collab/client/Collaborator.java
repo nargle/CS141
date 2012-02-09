@@ -192,11 +192,6 @@ public class Collaborator extends Composite implements ClickHandler {
 		docButtons.add(refreshList);
 		westPan.add(docButtons);
 		westPan.add(new HTML("<h2>Documents</h2>"));
-		// documentList.addItem("HI");
-		// documentList.addItem("Some Document Title");
-		// documentList.addItem("That's");
-		// documentList.addItem("XD");
-		// documentList.addItem("abcdefghijklmnopqrstuvwxyz");
 		documentList.setVisibleItemCount(15);
 		documentList.setWidth("100%");
 		//documentList.setHeight("70%");
@@ -625,14 +620,12 @@ public class Collaborator extends Composite implements ClickHandler {
 		}*/
 	}
 
-	/* DOESN'T WORKKKKKKKKKKKKKK */
 	public void loadDocument() {
-		
 		creatingDoc = true;
 		String key = documentList.getValue(documentList.getSelectedIndex());
-		UnlockedDocument openedDoc = reader.getDocument(key);
+		reader.getDocument(key);
 		VerticalPanel newTab = 
-				openDoc(openedDoc.getTitle(), openedDoc.getContents());
+				openDoc(readOnlyDoc.getTitle(), readOnlyDoc.getContents());
 		creatingDoc = false;
 		openTabs.add(newTab);
 		//History.newItem("loaded");

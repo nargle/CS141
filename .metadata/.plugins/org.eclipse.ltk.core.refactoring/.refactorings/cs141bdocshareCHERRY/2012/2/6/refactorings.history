@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Move element &apos;Document.java&apos; to &apos;cs141bdocshareCHERRY/src/edu.caltech.cs141b.hw2.gwt.collab.server&apos;&#x0D;&#x0A;- Original project: &apos;cs141bdocshareCHERRY&apos;&#x0D;&#x0A;- Destination element: &apos;cs141bdocshareCHERRY/src/edu.caltech.cs141b.hw2.gwt.collab.server&apos;&#x0D;&#x0A;- Original element: &apos;edu.caltech.cs141b.hw2.gwt.collab.shared.Document.java&apos;&#x0D;&#x0A;- Update references to refactored element" description="Move compilation unit" destination="/src&lt;edu.caltech.cs141b.hw2.gwt.collab.server" element1="/src&lt;edu.caltech.cs141b.hw2.gwt.collab.shared{Document.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.move" patterns="*" policy="org.eclipse.jdt.ui.moveResources" qualified="false" references="true" stamp="1328689855615" units="1" version="1.0"/>
+</session>

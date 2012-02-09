@@ -66,5 +66,14 @@ public interface CollaboratorService extends RemoteService {
 	 */
 	void releaseLock(LockedDocument doc) throws LockExpired;
 	
+	/**
+	 * Used to delete a currently locked document.
+	 * 
+	 * @param documentKey the key of the document to be deleted
+	 * @throws LockExpired if the locking primitives in the supplied
+	 *         LockedDocument object cannot be used to delete the document
+	 */
+	void deleteDocument(String documentKey) throws LockExpired;
+	
 }
 
