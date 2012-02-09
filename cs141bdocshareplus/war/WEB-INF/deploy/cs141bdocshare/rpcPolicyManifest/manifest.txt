@@ -1,0 +1,3 @@
+# Module cs141bdocshare
+# RPC service class, partial path of RPC policy file
+docshare.client.GreetingService, 539F8FA8FFAEC20EDBEA253CD034DBB4.gwt.rpc

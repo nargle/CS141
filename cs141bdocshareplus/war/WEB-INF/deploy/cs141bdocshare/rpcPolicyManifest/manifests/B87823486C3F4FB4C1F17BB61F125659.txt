@@ -1,0 +1,2 @@
+serviceClass: docshare.client.GreetingService
+path: 539F8FA8FFAEC20EDBEA253CD034DBB4.gwt.rpc

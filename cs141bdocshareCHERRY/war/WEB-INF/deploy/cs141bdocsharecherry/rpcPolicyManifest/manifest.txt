@@ -1,3 +1,0 @@
-# Module cs141bdocsharecherry
-# RPC service class, partial path of RPC policy file
-cs141bdocshareCHERRY.client.GreetingService, E79163452C5D3975133AF77E4422123C.gwt.rpc
