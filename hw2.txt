@@ -1,0 +1,7 @@
+Daniel Chen
+Jocelyn Kishi
+Kevin Kowalski
+
+Homework 2
+App:        cs141bdocshare.appspot.com/
+Repository: https://github.com/nargle/CS141

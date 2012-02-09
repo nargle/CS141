@@ -1,0 +1,2 @@
+serviceClass: cs141bdocshareCHERRY.client.GreetingService
+path: E79163452C5D3975133AF77E4422123C.gwt.rpc
