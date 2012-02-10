@@ -3,6 +3,7 @@ package edu.caltech.cs141b.hw2.gwt.collab.client;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.History;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.ui.TabBar;
 
 import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
 
@@ -52,10 +53,27 @@ public class DocReader implements AsyncCallback<UnlockedDocument> {
 	 */
 	protected void gotDoc(UnlockedDocument result) {
 		collaborator.readOnlyDoc = result;
+		if (collaborator.isReload) {
+			//If reloading a document that is already open
+			TabBar tabs = collaborator.openTabs.getTabBar();
+			tabs.setTabText(collaborator.currentTab, result.getTitle());
+			collaborator.title.setValue(result.getTitle());
+			collaborator.contents.setHTML(result.getContents());
+			collaborator.setDefaultButtons();
+		}
+		else
+			collaborator.openDoc(result.getTitle(), result.getContents());
+		/*ABOVE MIGHT NOT WORK BUT IS SUPPOSED TO PREVENT TABS 
+		 * FROM OPENING ON SAVING AND REFRESH*/
+		//collaborator.openDoc(result.getTitle(), result.getContents());
 		collaborator.lockedDoc = null;
-		collaborator.title.setValue(result.getTitle());
-		collaborator.contents.setHTML(result.getContents());
-		collaborator.setDefaultButtons();
+		collaborator.isReload = false;
+		/*TabBar tabs = collaborator.openTabs.getTabBar();
+		tabs.setTabText(collaborator.documentList.getSelectedIndex(), 
+						result.getTitle());*/
+		//collaborator.title.setValue(result.getTitle());
+		//collaborator.contents.setHTML(result.getContents());
+		//collaborator.setDefaultButtons();
 		History.newItem(result.getKey());
 	}
 }

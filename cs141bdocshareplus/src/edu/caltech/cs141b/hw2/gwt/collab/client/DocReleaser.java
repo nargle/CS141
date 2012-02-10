@@ -20,6 +20,10 @@ public class DocReleaser implements AsyncCallback<Void> {
 	public void releaseLock(LockedDocument lockedDoc) {
 		collaborator.statusUpdate("Releasing lock on '" + lockedDoc.getTitle()
 				+ "'.");
+		collaborator.saveButton.setEnabled(false);
+		collaborator.cancelButton.setEnabled(false);
+		collaborator.refreshDoc.setEnabled(false);
+		collaborator.closeButton.setEnabled(false);
 		collaborator.collabService.releaseLock(lockedDoc, this);
 	}
 
@@ -33,10 +37,12 @@ public class DocReleaser implements AsyncCallback<Void> {
 					+ " with message: " + caught.getMessage());
 			GWT.log("Error releasing document.", caught);
 		}
+		collaborator.setDefaultButtons();
 	}
 
 	@Override
 	public void onSuccess(Void result) {
+		collaborator.setDefaultButtons();
 		collaborator.statusUpdate("Document lock released.");
 	}
 	

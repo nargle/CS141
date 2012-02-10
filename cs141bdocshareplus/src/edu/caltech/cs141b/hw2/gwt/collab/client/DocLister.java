@@ -20,10 +20,10 @@ public class DocLister implements AsyncCallback<List<DocumentMetadata>> {
 	
 	public void getDocumentList() {
 		collaborator.statusUpdate("Fetching document list.");
-		collaborator.refreshDoc.setEnabled(false);
-		collaborator.statusUpdate("About to load document list.");
+		collaborator.refreshList.setEnabled(false);
+		//collaborator.statusUpdate("About to load document list.");
 		collaborator.collabService.getDocumentList(this);
-		collaborator.statusUpdate("Document list loaded.");
+		//collaborator.statusUpdate("Document list loaded.");
 	}
 
 	@Override
@@ -50,7 +50,8 @@ public class DocLister implements AsyncCallback<List<DocumentMetadata>> {
 						meta.getTitle(), meta.getKey());
 			}
 		}
-		collaborator.refreshDoc.setEnabled(true);
+		collaborator.refreshList.setEnabled(true);
+		collaborator.statusUpdate("Document list loaded");
 	}
 	
 }

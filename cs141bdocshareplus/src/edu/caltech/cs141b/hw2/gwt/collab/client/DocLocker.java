@@ -34,7 +34,7 @@ public class DocLocker implements AsyncCallback<LockedDocument> {
 					+ " with message: " + caught.getMessage());
 			GWT.log("Error getting document lock.", caught);
 		}
-		collaborator.lockButton.setEnabled(true);
+		collaborator.setDefaultButtons();
 	}
 
 	@Override
@@ -60,17 +60,16 @@ public class DocLocker implements AsyncCallback<LockedDocument> {
 		collaborator.readOnlyDoc = null;
 		collaborator.lockedDoc = result;
 		collaborator.title.setValue(result.getTitle());
-		collaborator.title.setEnabled(true);
+		//collaborator.title.setEnabled(true);
 		collaborator.contents.setHTML(result.getContents());
-		collaborator.contents.setEnabled(true);
+		collaborator.setDocLockedButtons();
+		/*collaborator.contents.setEnabled(true);
 		collaborator.refreshDoc.setEnabled(true);
 		collaborator.lockButton.setEnabled(false);
 		collaborator.saveButton.setEnabled(true);
-		
 		collaborator.cancelButton.setEnabled(true);
 		collaborator.deleteButton.setEnabled(true);
-		collaborator.closeButton.setEnabled(true);
-		
+		collaborator.closeButton.setEnabled(true);*/
 	}
 	
 }

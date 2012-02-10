@@ -1,28 +1,26 @@
 package edu.caltech.cs141b.hw2.gwt.collab.client;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
-import com.google.gwt.event.dom.client.ChangeEvent;
-import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.logical.shared.SelectionEvent;
 import com.google.gwt.event.logical.shared.SelectionHandler;
 import com.google.gwt.user.client.History;
+import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.DecoratorPanel;
 import com.google.gwt.user.client.ui.DockPanel;
 import com.google.gwt.user.client.ui.HTML;
-import com.google.gwt.user.client.ui.HasHorizontalAlignment;
 import com.google.gwt.user.client.ui.HorizontalPanel;
-import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.RichTextArea;
+import com.google.gwt.user.client.ui.ScrollPanel;
 import com.google.gwt.user.client.ui.TabPanel;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
-import com.google.gwt.user.client.ui.WidgetCollection;
+import com.google.gwt.user.client.ui.Widget;
 
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
@@ -43,12 +41,13 @@ public class Collaborator extends Composite implements ClickHandler {
 	
 	// Managing available documents.
 	protected ListBox documentList = new ListBox();
-	private Button refreshList = new Button("Refresh");
+	protected Button refreshList = new Button("Refresh");
 	private Button loadDoc = new Button("Load Document");
 	private Button createNew = new Button("Create Document");
 	
 	// Used in the tab selection handler
 	private boolean creatingDoc;
+	protected boolean isReload;
 	
 	// For displaying document information and editing document content.
 	protected int currentTab;
@@ -75,8 +74,8 @@ public class Collaborator extends Composite implements ClickHandler {
 	protected ArrayList<VerticalPanel> tabWidgs = new ArrayList<VerticalPanel>(); // Panel list for open docs
 	
 	//Displaying other information
-	private HTML recentInfo; // Recent saves, changes
-	private HTML globalInfo; // Global info about program
+	//private HTML recentInfo; // Recent saves, changes
+	//private HTML globalInfo; // Global info about program
 	//private TextArea pageTitle; // Title of Page ??
 	
 	// Callback objects.
@@ -85,9 +84,11 @@ public class Collaborator extends Composite implements ClickHandler {
 	private DocLocker locker = new DocLocker(this);
 	protected DocReleaser releaser = new DocReleaser(this);
 	private DocSaver saver = new DocSaver(this);
+	protected DocDeleter deleter = new DocDeleter(this);
 	protected String waitingKey = null;
 	
 	// Status tracking.
+	private ScrollPanel statusAreaScroll;
 	private VerticalPanel statusArea = new VerticalPanel();
 	/* REPLACE ABOVE LINE WITH TEXTAREA FOR RECENT??*/
 	
@@ -102,6 +103,7 @@ public class Collaborator extends Composite implements ClickHandler {
 		
 		// Initialize creatingDoc
 		creatingDoc = false;
+		isReload = false;
 		
 		// Initialize fields:
 		lockedDocList = new ArrayList<LockedDocument>();
@@ -114,6 +116,7 @@ public class Collaborator extends Composite implements ClickHandler {
 		cancelButtonList = new ArrayList<Button>();
 		deleteButtonList = new ArrayList<Button>();
 		closeButtonList = new ArrayList<Button>();
+		
 		
 		////HorizontalPanel outerHp = new HorizontalPanel();
 		DockPanel dockPan = new DockPanel();
@@ -135,7 +138,8 @@ public class Collaborator extends Composite implements ClickHandler {
 		            // Let the user know what they just did.
 		            if (!creatingDoc) {
 		                int i = event.getSelectedItem();
-		                statusUpdate("You clicked tab " + i);
+		                //statusUpdate("You clicked tab " + i);
+		                statusUpdate("Selecting tab, index " + i);
 		                currentTab = i;
 		                refreshDoc = refreshDocList.get(currentTab);
 		                lockButton = lockButtonList.get(currentTab);
@@ -153,7 +157,7 @@ public class Collaborator extends Composite implements ClickHandler {
                     
 		                //refreshDoc.setText("REFRESH!");
 		                //statusUpdate(refreshDocList.get(1).getText());
-		                statusUpdate("Done clicking tab" + i);
+		                //statusUpdate("Done clicking tab" + i);
 		            }
 		            
 		        }
@@ -188,7 +192,7 @@ public class Collaborator extends Composite implements ClickHandler {
 		docButtons.setWidth("100%");
 		//docButtons.setHeight("15%");
 		docButtons.add(createNew);
-		docButtons.add(loadDoc);
+		//docButtons.add(loadDoc);
 		docButtons.add(refreshList);
 		westPan.add(docButtons);
 		westPan.add(new HTML("<h2>Documents</h2>"));
@@ -199,11 +203,20 @@ public class Collaborator extends Composite implements ClickHandler {
 		//westPan.setCellHeight(docButtons, "15%");
 		//westPan.setCellHeight(documentList, "70%");
 		westPan.setCellWidth(documentList, "100%");
+		westPan.add(loadDoc);
+				
+		//Set up current document viewing widgets
+		openTabs.setWidth("100%");
+		VerticalPanel openDocsPanel = new VerticalPanel();
+		openDocsPanel.add(openTabs);
+		openDocsPanel.setBorderWidth(2);
+		openDocsPanel.setWidth("100%");
+		openDocsPanel.setHeight("100%");
 		
 		//Set up recent info and global info widgets
 		eastPan.setSpacing(10);
 		eastPan.setWidth("100%");
-		eastPan.add(new HTML("<h2>Recent</h2>"));
+		/*eastPan.add(new HTML("<h2>Recent</h2>"));
 		recentInfo = new HTML("ABC was saved 3 minutes ago.<br/>XYZ was saved 2 hours ago.");
 		HorizontalPanel recentInfoPanel = new HorizontalPanel();
 		recentInfoPanel.setBorderWidth(1);
@@ -211,7 +224,7 @@ public class Collaborator extends Composite implements ClickHandler {
 		//recentInfoPanel.setHeight("70%");
 		eastPan.add(recentInfoPanel);
 		recentInfo.setWidth("100%");
-		globalInfo = new HTML("<b>Total Views</b>: 4123 <br/><b>Total Saves</b>: 128 <br/>15 Documents.");
+		globalInfo = new HTML("<b>Total Views</b>: 4123 <br/><b>Total Saves</b>: 128 <br/>15 Documents.");*
 		HorizontalPanel globalInfoPanel = new HorizontalPanel();
 		globalInfoPanel.setBorderWidth(1);
 		globalInfoPanel.add(globalInfo);
@@ -220,29 +233,19 @@ public class Collaborator extends Composite implements ClickHandler {
 		
 		eastPan.add(globalInfoPanel);
 		eastPan.setCellHeight(globalInfoPanel, "15%");
-		eastPan.setCellHeight(recentInfoPanel, "70%");
+		eastPan.setCellHeight(recentInfoPanel, "70%");*/
 
-	    statusArea.setSpacing(10);
-	    statusArea.add(new HTML("<h2>Console</h2>"));
-	    eastPan.add(statusArea);
-	    eastPan.setCellHeight(statusArea, "100%");
+	    statusArea.setSpacing(3);
+	    //statusArea.add(new HTML("<h2>Console</h2>"));
+	    eastPan.add(new HTML("<h2>Console</h2>"));
+	    statusAreaScroll = new ScrollPanel(statusArea);
+		eastPan.add(statusAreaScroll);
+		eastPan.setHeight("100%");
+		eastPan.setCellHeight(statusAreaScroll, "90%");
+	    //eastPan.setCellHeight(statusAreaScroll, "80%");
+		statusAreaScroll.setHeight("100%");
+	    //statusArea.setAlwaysShowScrollBars(true);
 		//eastPan.add(new HTML("<b>Total Views</b>: 4123 <br/><b>Total Saves</b>: 128 <br/>15 Documents."));
-		
-		//Set up current document viewing widgets
-		openTabs.setWidth("100%");
-		//openTabs.setHeight("100%");
-		//openTabs.add(new HTML("Tab A"), "A");
-		//openTabs.add(new HTML("Tab B"), "B");
-		//VerticalPanel widg1 = openDoc("Title 1", "Hi there! <b>Is this html working?</b>");
-		//VerticalPanel widg2 = openDoc("?!!", "Work <b>work</b> <i>work</i> WORKKKK...");
-		//tabWidgs.add(widg1);
-		//tabWidgs.add(widg2);
-		//openTabs.selectTab(1); // Show Tab B initially
-		VerticalPanel openDocsPanel = new VerticalPanel();
-		openDocsPanel.add(openTabs);
-		openDocsPanel.setBorderWidth(2);
-		openDocsPanel.setWidth("100%");
-		openDocsPanel.setHeight("100%");
 		
 		//Set up buttons
 		createNew.addClickHandler(this);
@@ -268,76 +271,21 @@ public class Collaborator extends Composite implements ClickHandler {
 		dockPan.setCellWidth(eastPan, "25%");
 		dockPan.setCellWidth(openDocsPanel, "50%");
 		dockPan.setCellWidth(westPan, "25%");
-	
+		
+		//Fix the heights
+		dockPan.setCellHeight(eastPan, westPan.getOffsetHeight() + "px");
+		dockPan.setCellHeight(eastPan, eastPan.getOffsetHeight() + "px");
+		dockPan.setCellHeight(eastPan, openDocsPanel.getOffsetHeight() + "px");
 		
 		initWidget(dockPan);
 		
-		/*VerticalPanel outerVp = new VerticalPanel();
-		outerVp.setSpacing(20);
-		
-		VerticalPanel vp = new VerticalPanel();
-		vp.setSpacing(10);
-		vp.add(new HTML("<h2>Available Documents</h2>"));
-		documentList.setWidth("100%");
-		vp.add(documentList);
-		HorizontalPanel hp = new HorizontalPanel();
-		hp.setSpacing(10);
-		hp.add(refreshList);
-		hp.add(createNew);
-		vp.add(hp);
-		DecoratorPanel dp = new DecoratorPanel();
-		dp.setWidth("100%");
-		dp.add(vp);
-		outerVp.add(dp);
-		
-		vp = new VerticalPanel();
-		vp.setSpacing(10);
-		vp.add(new HTML("<h2>Selected Document</h2>"));
-		title.setWidth("100%");
-		vp.add(title);
-		contents.setWidth("100%");
-		vp.add(contents);
-		hp = new HorizontalPanel();
-		hp.setSpacing(10);
-		hp.add(refreshDoc);
-		hp.add(randomButton);
-		hp.add(lockButton);
-		hp.add(saveButton);
-		vp.add(hp);
-		dp = new DecoratorPanel();
-		dp.setWidth("100%");
-		dp.add(vp);
-		outerVp.add(dp);
-		
-		////outerHp.add(outerVp);
-		dockPan.add(outerVp);
-		outerVp = new VerticalPanel();
-		outerVp.setSpacing(20);
-		dp = new DecoratorPanel();
-		dp.setWidth("100%");
-		statusArea.setSpacing(10);
-		statusArea.add(new HTML("<h2>Console</h2>"));
-		dp.add(statusArea);
-		outerVp.add(dp);
-		////outerHp.add(outerVp);
-		dockPan.add(outerVp);
-		
-		refreshList.addClickHandler(this);
-		createNew.addClickHandler(this);
-		refreshDoc.addClickHandler(this);
-		randomButton.addClickHandler(this);
-		lockButton.addClickHandler(this);
-		saveButton.addClickHandler(this);
-		
-		documentList.addChangeHandler(this);
-		documentList.setVisibleItemCount(10);
-		
-		setDefaultButtons();
-		////initWidget(outerHp);
-		initWidget(dockPan);
-		
-		lister.getDocumentList();*/
-		//lister.getDocumentList();
+		//Wait for 1 second, then load document list
+		Timer t = new Timer() {
+			public void run() {
+				refreshList.click();
+			}
+		};
+		t.schedule(1000);
 	}
 	
 	/**
@@ -346,7 +294,8 @@ public class Collaborator extends Composite implements ClickHandler {
 	 */
 	protected VerticalPanel openDoc(String title, String contents)
 	{
-	    currentTab = openTabs.getWidgetCount();
+	    currentTab = this.openTabs.getWidgetCount();
+	    
 	    statusUpdate("Opening new document in tab " + currentTab);
 		VerticalPanel mainPan = new VerticalPanel();
 		mainPan.setSpacing(20);
@@ -362,8 +311,8 @@ public class Collaborator extends Composite implements ClickHandler {
 		lockButton = new Button("Edit");
 		saveButton = new Button("Save");
 		cancelButton = new Button("Cancel");
-		deleteButton = new Button("Delete this document");
-		closeButton = new Button("Close this document");
+		deleteButton = new Button("Delete Document");
+		closeButton = new Button("Close Document");
 		statusUpdate("Done creating buttons");
 		
 		refreshDocList.add(currentTab, refreshDoc);
@@ -380,12 +329,12 @@ public class Collaborator extends Composite implements ClickHandler {
 		deleteButton.addClickHandler(this);
 		closeButton.addClickHandler(this);
 		
-		// Done in DockLocker
-		/* lockButton.setEnabled(true);
-		 * saveButton.setEnabled(false);
-		 * cancelButton.setEnabled(false);
-		 * deleteButton.setEnabled(true);
-		 * closeButton.setEnabled(true); */
+		refreshDoc.setEnabled(true);
+		lockButton.setEnabled(true);
+		saveButton.setEnabled(false);
+		cancelButton.setEnabled(false);
+		deleteButton.setEnabled(true);
+		closeButton.setEnabled(true);
 		
 		buttons.add(refreshDoc);
 		buttons.add(lockButton);
@@ -398,9 +347,8 @@ public class Collaborator extends Composite implements ClickHandler {
 		
 		// Create text area for title
 		this.title = new TextBox();
-		
-		// Done in DocLocker
-		// this.title.setEnabled(false);
+		//this.title.setEnabled(false);
+
 		this.title.setWidth("100%");
 		
 		mainPan.add(this.title);
@@ -413,31 +361,51 @@ public class Collaborator extends Composite implements ClickHandler {
 		}
 		
 		this.contents.setHTML(contents);
-		// Done in DocLocker
-		// this.contents.setEnabled(false);
+		//this.contents.setEnabled(false);
 		
 		this.contents.setHeight("200%");
 		this.contents.setWidth("100%");
 		
 		mainPan.add(this.contents);
 		
-		HTML timeInfo = new HTML("<b>Last saved</b>: 12 minutes ago.");
-		timeInfo.setHeight("20%");
+		setDefaultButtons();
 		
-		mainPan.add(timeInfo);
+		//HTML timeInfo = new HTML("<b>Last saved</b>: 12 minutes ago.");
+		//timeInfo.setHeight("20%");
+		
+		//mainPan.add(timeInfo);
 		
 		mainPan.add(deleteButton);
 		
 		openTabs.add(mainPan, title);
-		//openTabs.add(mainPan, "wheee");
 		
 		openTabs.selectTab(openTabs.getWidgetCount() - 1);
 		
 		statusUpdate("Done opening new document.");
 		
 		return mainPan;
-		
-		
+	}
+	
+	/**
+	 * Closes the current tab.
+	 */
+	protected void closeTab()
+	{
+		if (lockedDoc != null) {
+			releaser.releaseLock(lockedDoc);
+		}
+        refreshDoc = refreshDocList.remove(currentTab);
+        lockButton = lockButtonList.remove(currentTab);
+        saveButton = saveButtonList.remove(currentTab);
+        cancelButton = cancelButtonList.remove(currentTab);
+        deleteButton = deleteButtonList.remove(currentTab);
+        closeButton = closeButtonList.remove(currentTab);
+        openTabs.remove(currentTab);
+        statusUpdate("Closing " + currentTab);
+        if(currentTab < openTabs.getWidgetCount())
+        	openTabs.selectTab(currentTab);
+        else if(openTabs.getWidgetCount() > 0)
+        	openTabs.selectTab(currentTab - 1);
 	}
 	
 	/**
@@ -452,20 +420,18 @@ public class Collaborator extends Composite implements ClickHandler {
 		lockButton.setEnabled(true);
 		saveButton.setEnabled(false);
 		title.setEnabled(false);
-		contents.setEnabled(false);
-		
+		contents.setEnabled(false);		
 		cancelButton.setEnabled(false);
 		closeButton.setEnabled(true);
-		deleteButton.setEnabled(true);
+		deleteButton.setEnabled(false);
 	}
 	
-	protected void setUnlockedButtons() {
-	    refreshDoc.setEnabled(true);
+	protected void setDocLockedButtons() {
+	    refreshDoc.setEnabled(false);
 	    lockButton.setEnabled(false);
 	    saveButton.setEnabled(true);
 	    title.setEnabled(true);
 	    contents.setEnabled(true);
-	    
 	    cancelButton.setEnabled(true);
 	    closeButton.setEnabled(true);
 	    deleteButton.setEnabled(true);
@@ -475,28 +441,37 @@ public class Collaborator extends Composite implements ClickHandler {
 	 * Behaves similarly to locking a document, except without a key/lock obj.
 	 */
 	private void createNewDocument() {
+		isReload = false;
 	    creatingDoc = true;
 		discardExisting(null);
 		lockedDoc = new LockedDocument(null, null, null,
 				"Untitled",
 				"Enter the document contents.");
-		VerticalPanel newDoc = openDoc(lockedDoc.getTitle(), lockedDoc.getContents());
+		//VerticalPanel newDoc = openDoc(lockedDoc.getTitle(), lockedDoc.getContents());
+		openDoc(lockedDoc.getTitle(), lockedDoc.getContents());
 		creatingDoc = false;
-		openTabs.add(newDoc);
+		//openTabs.add(newDoc);
 		locker.gotDoc(lockedDoc);
 		History.newItem("new");
 	}
 	
 	public void loadDocument() {
+		isReload = false;
 		creatingDoc = true;
 		String key = documentList.getValue(documentList.getSelectedIndex());
 		statusUpdate(key);
 		reader.getDocument(key);
-		VerticalPanel newTab = 
-				openDoc(readOnlyDoc.getTitle(), readOnlyDoc.getContents());
+		///VerticalPanel newTab = 
+		//		openDoc(readOnlyDoc.getTitle(), readOnlyDoc.getContents());
 		creatingDoc = false;
-		openTabs.add(newTab);
+		///openTabs.add(newTab);
 		//History.newItem("loaded");
+	}
+	
+	public void deleteDocument() {
+		statusUpdate("Deleting document with key " + this.lockedDoc.getKey());
+		deleter.deleteDocument(this.lockedDoc.getKey());
+		statusUpdate("Deleted document with key " + this.lockedDoc.getKey());
 	}
 	
 	/**
@@ -544,11 +519,11 @@ public class Collaborator extends Composite implements ClickHandler {
 	 */
 	protected void statusUpdate(String status) {
 		while (statusArea.getWidgetCount() > 22) {
-			statusArea.remove(1);
+		statusArea.remove(1);
 		}
 		final HTML statusUpd = new HTML(status);
 		statusArea.add(statusUpd);
-	}
+		}
 	
 
 	/* (non-Javadoc)
@@ -562,31 +537,59 @@ public class Collaborator extends Composite implements ClickHandler {
             lister.getDocumentList();
 		} 
 		else if (event.getSource().equals(createNew)) {
-		    statusUpdate("Creating document...");
-		    createNewDocument();
+			if(openTabs.getWidgetCount() > 7)
+				statusUpdate("Couldn't create new document because" 
+						+ " there are already 8 documents open.");
+			else {
+			    statusUpdate("Creating document...");
+			    createNewDocument();
+			}
 		}
 		else if (event.getSource().equals(loadDoc)) {
-		    statusUpdate("Loading document...");
-		    loadDocument();
+		    //statusUpdate("Loading document...");
+			if(openTabs.getWidgetCount() > 7)
+				statusUpdate("Couldn't open another document, since there"
+						+ " are already 8 documents open.");
+			else
+				loadDocument();
 		}
 		else if (event.getSource().equals(refreshDoc)) {
 		    statusUpdate("Refreshing document...");
+		    isReload = true;
 		    if (readOnlyDoc != null) {
 		        reader.getDocument(readOnlyDoc.getKey());
 		    }
 		}
+		else if (event.getSource().equals(cancelButton)) {
+			releaser.releaseLock(lockedDoc);
+		}
         else if (event.getSource().equals(lockButton)) {
-            statusUpdate("Editing document...");
+            //statusUpdate("Editing document...");
+        	//statusUpdate("Requesting editing lock for document");
             if (readOnlyDoc != null) {
+            	statusUpdate("Requesting editing lock for document.");
+            	lockButton.setEnabled(false);
                 locker.lockDocument(readOnlyDoc.getKey());
             }
         }		
 		else if (event.getSource().equals(saveButton)) {
 		    statusUpdate("Saving document...");
+		    isReload = true;
 		    lockedDoc.setTitle(title.getValue());
             lockedDoc.setContents(contents.getHTML());
             saver.saveDocument(lockedDoc);
             openTabs.getTabBar().setTabText(currentTab, title.getValue());
+		}
+		else if (event.getSource().equals(closeButton)) {
+			closeTab();
+		}
+		else if(event.getSource().equals(deleteButton)) {
+			deleteDocument();
+			closeTab();
+			
+			// Refreshes the document list.
+			History.newItem("list");
+            lister.getDocumentList();
 		}
 
 		/*
