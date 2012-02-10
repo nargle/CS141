@@ -7,7 +7,6 @@ import java.util.List;
 // import java.util.logging.Logger;
 
 import javax.jdo.Extent;
-import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Transaction;
 
@@ -143,38 +142,75 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         Transaction tx = pm.currentTransaction();
         UnlockedDocument unlockedDocument = null;
 	    
-	    try {
-	    	tx.begin();
-	        Date currDate = new Date();
-	        try {
-	        	Document document = 
-	        			pm.getObjectById(Document.class, doc.getKey());
-	        	if(!document.isLocked())
-					throw new LockExpired("saveDocument(): " +
-							"Lock expired, so cannot save.");
-	        	else if(!document.getLockedBy().equals(
-	        			getThreadLocalRequest().getRemoteAddr()))
-	        		throw new LockExpired("saveDocument(): Another user has " +
-	        				"acquired the lock, so cannot save.");
-	        	else
-	        	{
-	        		document.setTitle(doc.getTitle());
-		            document.setContents(doc.getContents()); //Update contents
-		            unlockedDocument = document.unlock();
-	        	}
-	        
-	        }
-	        catch (JDOObjectNotFoundException e) {
-	            String key = getThreadLocalRequest().getRemoteAddr() + " " + 
-	        			currDate;
-	            unlockedDocument = new UnlockedDocument(key, 
+        tx.begin();
+        Date currDate = new Date();
+        try{
+        	if(doc.getKey() != null)
+        	{
+        		Document document = 
+        			pm.getObjectById(Document.class, doc.getKey());
+        		System.err.println("Doc Key: " + document.getKey());
+        		if(!document.isLocked())
+        			throw new LockExpired("saveDocument(): " +
+        			"Lock expired, so cannot save.");
+        		else if(!document.getLockedBy().equals(
+        				getThreadLocalRequest().getRemoteAddr()))
+        			throw new LockExpired("saveDocument(): Another user has " +
+        			"acquired the lock, so cannot save.");
+        		else
+        		{
+        			document.setTitle(doc.getTitle());
+        			document.setContents(doc.getContents()); //Update contents
+        			unlockedDocument = document.unlock();
+        		}
+        	}
+        	else
+        	{
+        		String key = getThreadLocalRequest().getRemoteAddr() + " " + 
+        		currDate;
+        		System.err.println("Key: " + key);
+        		unlockedDocument = new UnlockedDocument(key, 
         				doc.getTitle(), doc.getContents());
-	            Document document = 
-	            		new Document(key, doc.getTitle(), doc.getContents());
-	            pm.makePersistent(document); //Save new document
-	        }
-	      
-	        tx.commit();
+        		Document document = 
+        			new Document(key, doc.getTitle(), doc.getContents());
+        		pm.makePersistent(document); //Save new document
+        	}
+        	//	    try {
+        	//	    	tx.begin();
+        	//	        Date currDate = new Date();
+        	//	        try {
+        	//	        	Document document = 
+        	//	        			pm.getObjectById(Document.class, doc.getKey());
+        	//	        	System.err.println("Doc Key: " + document.getKey());
+        	//	        	if(!document.isLocked())
+        	//					throw new LockExpired("saveDocument(): " +
+        	//							"Lock expired, so cannot save.");
+        	//	        	else if(!document.getLockedBy().equals(
+        	//	        			getThreadLocalRequest().getRemoteAddr()))
+        	//	        		throw new LockExpired("saveDocument(): Another user has " +
+        	//	        				"acquired the lock, so cannot save.");
+        	//	        	else
+        	//	        	{
+        	//	        		document.setTitle(doc.getTitle());
+        	//		            document.setContents(doc.getContents()); //Update contents
+        	//		            unlockedDocument = document.unlock();
+        	//	        	}
+        	//	        
+        	//	        }
+        	//	        catch (JDOObjectNotFoundException e) {
+        	//	            String key = getThreadLocalRequest().getRemoteAddr() + " " + 
+        	//	        			currDate;
+        	//	            System.err.println("Key: " + key);
+        	//	            unlockedDocument = new UnlockedDocument(key, 
+        	//        				doc.getTitle(), doc.getContents());
+        	//	            Document document = 
+        	//	            		new Document(key, doc.getTitle(), doc.getContents());
+        	//	            pm.makePersistent(document); //Save new document
+        	//	            
+        	//	            return unlockedDocument;
+        	//	        }
+
+        	tx.commit();
 	    }
 	    catch(DocumentException e) {
 	        	System.err.println("saveDocument(): " + e.getMessage());

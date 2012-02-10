@@ -5,6 +5,7 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockExpired;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
+import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
 
 /**
  * Used in conjunction with <code>CollaboratorService.releaseLock()</code>.
@@ -22,8 +23,9 @@ public class DocReleaser implements AsyncCallback<Void> {
 				+ "'.");
 		collaborator.saveButton.setEnabled(false);
 		collaborator.cancelButton.setEnabled(false);
-		collaborator.refreshDoc.setEnabled(false);
+		collaborator.refreshButton.setEnabled(false);
 		collaborator.closeButton.setEnabled(false);
+		collaborator.deleteButton.setEnabled(false);
 		collaborator.collabService.releaseLock(lockedDoc, this);
 	}
 
@@ -44,6 +46,10 @@ public class DocReleaser implements AsyncCallback<Void> {
 	public void onSuccess(Void result) {
 		collaborator.setDefaultButtons();
 		collaborator.statusUpdate("Document lock released.");
+		collaborator.lockedDoc = null;
+		collaborator.readOnlyDoc = new UnlockedDocument(collaborator.openDocKeys.get(collaborator.currentTab), 
+				collaborator.titleList.get(collaborator.currentTab).getValue(), 
+				collaborator.contentsList.get(collaborator.currentTab).getHTML());
 	}
 	
 }

@@ -30,6 +30,7 @@ public class DocReader implements AsyncCallback<UnlockedDocument> {
 				+ "; caught exception " + caught.getClass()
 				+ " with message: " + caught.getMessage());
 		GWT.log("Error getting document lock.", caught);
+		collaborator.loadDoc.setEnabled(true);
 	}
 
 	@Override
@@ -42,6 +43,7 @@ public class DocReader implements AsyncCallback<UnlockedDocument> {
 			collaborator.statusUpdate("Returned document that is no longer "
 					+ "expected; discarding.");
 		}
+		collaborator.loadDoc.setEnabled(true);
 	}
 	
 	/**
@@ -56,24 +58,21 @@ public class DocReader implements AsyncCallback<UnlockedDocument> {
 		if (collaborator.isReload) {
 			//If reloading a document that is already open
 			TabBar tabs = collaborator.openTabs.getTabBar();
-			tabs.setTabText(collaborator.currentTab, result.getTitle());
+			//tabs.setTabText(collaborator.currentTab, result.getTitle());
+			if(result.getTitle().length() > 8)
+				tabs.setTabText(collaborator.currentTab,
+						result.getTitle().substring(0, 5) + "...");
+			else
+				tabs.setTabText(collaborator.currentTab, result.getTitle());
 			collaborator.title.setValue(result.getTitle());
 			collaborator.contents.setHTML(result.getContents());
 			collaborator.setDefaultButtons();
 		}
 		else
 			collaborator.openDoc(result.getTitle(), result.getContents());
-		/*ABOVE MIGHT NOT WORK BUT IS SUPPOSED TO PREVENT TABS 
-		 * FROM OPENING ON SAVING AND REFRESH*/
-		//collaborator.openDoc(result.getTitle(), result.getContents());
 		collaborator.lockedDoc = null;
+		collaborator.readOnlyDoc = result;
 		collaborator.isReload = false;
-		/*TabBar tabs = collaborator.openTabs.getTabBar();
-		tabs.setTabText(collaborator.documentList.getSelectedIndex(), 
-						result.getTitle());*/
-		//collaborator.title.setValue(result.getTitle());
-		//collaborator.contents.setHTML(result.getContents());
-		//collaborator.setDefaultButtons();
 		History.newItem(result.getKey());
 	}
 }

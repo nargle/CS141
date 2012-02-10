@@ -21,9 +21,7 @@ public class DocLister implements AsyncCallback<List<DocumentMetadata>> {
 	public void getDocumentList() {
 		collaborator.statusUpdate("Fetching document list.");
 		collaborator.refreshList.setEnabled(false);
-		//collaborator.statusUpdate("About to load document list.");
 		collaborator.collabService.getDocumentList(this);
-		//collaborator.statusUpdate("Document list loaded.");
 	}
 
 	@Override
@@ -32,7 +30,7 @@ public class DocLister implements AsyncCallback<List<DocumentMetadata>> {
 				+ "; caught exception " + caught.getClass()
 				+ " with message: " + caught.getMessage());
 		GWT.log("Error getting document list.", caught);
-		collaborator.refreshDoc.setEnabled(true);
+		collaborator.refreshButton.setEnabled(true);
 	}
 
 	@Override
