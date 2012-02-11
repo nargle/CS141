@@ -44,10 +44,9 @@ public class DocReleaser implements AsyncCallback<Void> {
 
 	@Override
 	public void onSuccess(Void result) {
-		collaborator.setDefaultButtons();
 		collaborator.statusUpdate("Document lock released.");
 		collaborator.lockedDoc = null;
-		collaborator.readOnlyDoc = new UnlockedDocument(collaborator.openDocKeys.get(collaborator.currentTab), 
+		collaborator.readOnlyDoc = new UnlockedDocument(collaborator.keyList.get(collaborator.currentTab), 
 				collaborator.titleList.get(collaborator.currentTab).getValue(), 
 				collaborator.contentsList.get(collaborator.currentTab).getHTML());
 	}

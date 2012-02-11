@@ -66,10 +66,10 @@ public class DocReader implements AsyncCallback<UnlockedDocument> {
 				tabs.setTabText(collaborator.currentTab, result.getTitle());
 			collaborator.title.setValue(result.getTitle());
 			collaborator.contents.setHTML(result.getContents());
-			collaborator.setDefaultButtons();
 		}
 		else
-			collaborator.openDoc(result.getTitle(), result.getContents());
+			collaborator.openDoc(result.getKey(), result.getTitle(), 
+					result.getContents());
 		collaborator.lockedDoc = null;
 		collaborator.readOnlyDoc = result;
 		collaborator.isReload = false;

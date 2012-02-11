@@ -61,7 +61,6 @@ public class DocLocker implements AsyncCallback<LockedDocument> {
 		collaborator.lockedDoc = result;
 		collaborator.title.setValue(result.getTitle());
 		collaborator.contents.setHTML(result.getContents());
-		collaborator.setDocLockedButtons();
 	}
 	
 }
