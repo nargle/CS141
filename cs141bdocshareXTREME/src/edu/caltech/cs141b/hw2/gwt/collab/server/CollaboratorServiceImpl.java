@@ -4,9 +4,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Timer;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ArrayBlockingQueue;
 
 // import java.util.logging.Logger;
 
@@ -21,7 +18,6 @@ import edu.caltech.cs141b.hw2.gwt.collab.shared.LockExpired;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockUnavailable;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
-import edu.caltech.cs141b.hw2.gwt.collab.shared.Parameters;
 
 import com.google.appengine.api.channel.ChannelService;
 import com.google.appengine.api.channel.ChannelServiceFactory;
@@ -34,8 +30,6 @@ import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 		CollaboratorService {
 	
-	private BlockingQueue<LockedDocument> messageQueue = 
-			new ArrayBlockingQueue<LockedDocument>(1);
 	// private static final Logger log = Logger.getLogger(CollaboratorServiceImpl.class.toString());
 	
 	/**
@@ -217,23 +211,25 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         	tx.begin();
 	        Document document = 
 	        		pm.getObjectById(Document.class, doc.getKey());
-	        if(!document.isLocked())
-	        	throw new LockExpired("releaseLock(): " +
-	        			"Lock expired, so no need to release.");
-	        else if(!document.getLockedBy().equals(
-	        		getThreadLocalRequest().getRemoteAddr()))
-	        	throw new LockExpired("releaseLock(): Another user has " +
-	        			"acquired the lock, so no need to release.");
-	        else
-	        {
-	        	document.removeChannel(channelKey);
-	        }
+//	        if(!document.isLocked())
+//	        	throw new LockExpired("releaseLock(): " +
+//	        			"Lock expired, so no need to release.");
+//	        else if(!document.getLockedBy().equals(
+//	        		getThreadLocalRequest().getRemoteAddr()))
+//	        	throw new LockExpired("releaseLock(): Another user has " +
+//	        			"acquired the lock, so no need to release.");
+//	        else
+//	        {
+//	        	document.removeChannel(channelKey);
+//	        }
+	        
+	        document.removeChannel(channelKey);
 	        
 	        tx.commit();
         }
-        catch(DocumentException e) {
-        	System.err.println("releaseLock(): " + e.getMessage());
-            }
+//        catch(DocumentException e) {
+//        	System.err.println("releaseLock(): " + e.getMessage());
+//            }
         finally {
             if (tx.isActive()) {
                 // Error occurred so roll back the transaction

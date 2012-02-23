@@ -9,7 +9,7 @@ import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
 /**
  * Used in conjunction with <code>CollaboratorService.lockDocument()</code>.
  */
-public class DocLocker implements AsyncCallback<LockedDocument> {
+public class DocLocker implements AsyncCallback<String> {
 	
 	private Collaborator collaborator;
 	
@@ -38,15 +38,17 @@ public class DocLocker implements AsyncCallback<LockedDocument> {
 	}
 
 	@Override
-	public void onSuccess(LockedDocument result) {
-		if (result.getKey().equals(collaborator.waitingKey)) {
-			collaborator.statusUpdate("Lock retrieved for document.");
-			gotDoc(result);
-		} else {
-			collaborator.statusUpdate("Got lock for document which is "
-					+ "no longer active.  Releasing lock.");
-			collaborator.releaser.releaseLock(result);
-		}
+	public void onSuccess(String token) {
+//		if (result.getKey().equals(collaborator.waitingKey)) {
+//			collaborator.statusUpdate("Lock retrieved for document.");
+//			gotDoc(result);
+//		} else {
+//			collaborator.statusUpdate("Got lock for document which is "
+//					+ "no longer active.  Releasing lock.");
+//			collaborator.releaser.releaseLock(result);
+//		}
+		
+		collaborator.docToken = token;
 	}
 	
 	/**

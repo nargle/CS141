@@ -21,8 +21,13 @@ import com.google.gwt.user.client.ui.TabPanel;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
+import edu.caltech.cs141b.hw2.gwt.collab.shared.Parameters;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
+
+import com.google.appengine.api.channel.ChannelService;
+import com.google.appengine.api.channel.ChannelServiceFactory;
+import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
 /**
  * Main class for a single Collaborator widget.
@@ -34,12 +39,15 @@ public class Collaborator extends Composite implements ClickHandler {
     // Track document information.
     protected UnlockedDocument readOnlyDoc = null;
     protected LockedDocument lockedDoc = null;
+    protected String docToken = null;
 
     // Managing available documents.
     protected ListBox documentList = new ListBox();
     protected Button refreshList = new Button("Refresh");
     protected Button loadDoc = new Button("Load Document");
+	protected Button simulate = new Button("Simulate");
     private Button createNew = new Button("Create Document");
+	private Button closeSim = new Button("Close Simulation");
 
     // Used in the tab selection handler
     //private boolean creatingDoc;
@@ -83,6 +91,9 @@ public class Collaborator extends Composite implements ClickHandler {
     
     // Contains the currently opened documents.
     protected TabPanel openTabs;
+	
+	// Contains the simulation information.
+	protected VerticalPanel simulateInfo;
 
     // Callback objects.
     protected DocLister lister = new DocLister(this);
@@ -96,6 +107,7 @@ public class Collaborator extends Composite implements ClickHandler {
     // Status tracking.
     private ScrollPanel statusAreaScroll;
     private VerticalPanel statusArea = new VerticalPanel();
+	private VerticalPanel openDocsPanel = new VerticalPanel();
 
     /**
      * UI initialization.
@@ -205,17 +217,26 @@ public class Collaborator extends Composite implements ClickHandler {
         documentList.setWidth("100%");
         westPan.add(documentList);
         westPan.setCellWidth(documentList, "100%");
-        westPan.add(loadDoc);
+		HorizontalPanel westPanInner = new HorizontalPanel();
+		westPanInner.setSpacing(5);
+        westPan.add(westPanInner);
+		westPanInner.add(loadDoc);
+		westPanInner.add(simulate);
 
         //Set up current document viewing widgets
         openTabs.setWidth("100%");
         openTabs.setStyleName("app-tab-panel");
-        VerticalPanel openDocsPanel = new VerticalPanel();
         openDocsPanel.add(openTabs);
         openDocsPanel.setBorderWidth(2);
         openDocsPanel.setWidth("100%");
         openDocsPanel.setHeight("100%");
         openDocsPanel.setStyleName("app-tab-panel-container");
+		simulateInfo = new VerticalPanel();
+		simulateInfo.setSpacing(10);
+		simulateInfo.setHeight("100%");
+		simulateInfo.add(closeSim);
+		openDocsPanel.add(simulateInfo);
+		simulateInfo.setVisible(false);
 
         //Set up recent info and global info widgets
         eastPan.setSpacing(10);
@@ -233,9 +254,11 @@ public class Collaborator extends Composite implements ClickHandler {
         //Set up buttons
         createNew.addClickHandler(this);
         loadDoc.addClickHandler(this);
+		simulate.addClickHandler(this);
         refreshList.addClickHandler(this);
         createNew.setEnabled(true);
         loadDoc.setEnabled(true);
+		closeSim.addClickHandler(this);
         refreshList.setEnabled(true);
 
         dockPan.setWidth("100%");
@@ -351,8 +374,9 @@ public class Collaborator extends Composite implements ClickHandler {
 
         mainPan.add(deleteButton);
 
-        if(title.length() > MAX_TITLE_CHARS)
-            openTabs.add(mainPan, title.substring(0, MAX_TITLE_CHARS - 3) + "...");
+        if(title.length() > Parameters.MAX_TITLE_CHARS)
+            openTabs.add(mainPan, 
+            		title.substring(0, Parameters.MAX_TITLE_CHARS - 3) + "...");
         else
             openTabs.add(mainPan, title);
 
@@ -377,6 +401,7 @@ public class Collaborator extends Composite implements ClickHandler {
         title.setEnabled(false);
         contents.setEnabled(false);  
         cancelButton.setEnabled(false);
+        cancelButton.setText("Cancel");
         closeButton.setEnabled(true);
         deleteButton.setEnabled(false);
     }
@@ -392,6 +417,7 @@ public class Collaborator extends Composite implements ClickHandler {
         title.setEnabled(true);
         contents.setEnabled(true);
         cancelButton.setEnabled(true);
+        cancelButton.setText("Cancel");
         closeButton.setEnabled(true);
         deleteButton.setEnabled(true);
     }
@@ -445,10 +471,44 @@ public class Collaborator extends Composite implements ClickHandler {
         History.newItem("new");
     }
     
+    public void lockDocument() {
+    	if (readOnlyDoc != null) {
+            statusUpdate("Requesting editing lock for document.");
+            lockButton.setEnabled(false);
+            cancelButton.setText("Leave Queue");
+            locker.lockDocument(readOnlyDoc.getKey());
+            
+            
+            ChannelFactory.createChannel(token, new ChannelCreatedCallback() {
+            	  @Override
+            	  public void onChannelCreated(Channel channel) {
+            	    channel.open(new SocketListener() {
+            	      @Override
+            	      public void onOpen() {
+            	        Window.alert("Channel opened!");
+            	      }
+            	      @Override
+            	      public void onMessage(String message) {
+            	        Window.alert("Received: " + message);
+            	      }
+            	      @Override
+            	      public void onError(SocketError error) {
+            	        Window.alert("Error: " + error.getDescription());
+            	      }
+            	      @Override
+            	      public void onClose() {
+            	        Window.alert("Channel closed!");
+            	      }
+            	    });
+            	  }
+            	});
+        }
+    }
+    
     /**
      * Saves the current document.
      */
-    public void saveDocument(){
+    public void saveDocument() {
         statusUpdate("Saving document...");
         // Reload the tab after saving the document.
         isReload = true;
@@ -470,6 +530,35 @@ public class Collaborator extends Composite implements ClickHandler {
         statusUpdate(key);
         reader.getDocument(key);
     }
+
+	/**
+     * Starts a simulation on the document that is currently selected in the
+	 * document list, going through the thinking, hungry, and eating phases.
+     */
+    public void startSimulation() {
+        String key = documentList.getValue(documentList.getSelectedIndex());
+        /*ABCD PUT LOTS AND LOTS OF CODE HERE */
+        simulateInfo.add(new HTML("Entering <b>thinking</b> phase..."));
+		/*simulateInfo.add(new HTML("Entering thinking phase (12 seconds)"));
+		simulateInfo.add(new HTML("Entering hungry phase"));
+		simulateInfo.add(new HTML("Entering eating phase (12 seconds)"));
+		simulateInfo.add(new HTML("All done!"));*/
+		/*ABCD PUT LOTS AND LOTS OF CODE HERE */
+    }
+	
+	/**
+	 * Closes the simulation window and resets buttons to previous state.
+	 */
+	public void closeSimulation() {
+		while (simulateInfo.getWidgetCount() > 1)
+			simulateInfo.remove(1);
+		openTabs.setVisible(true);	
+		simulateInfo.setVisible(false);
+		refreshList.setEnabled(true);
+		loadDoc.setEnabled(true);
+		simulate.setEnabled(true);
+		createNew.setEnabled(true);
+	}
 
     /**
      * Delete the current document.
@@ -506,6 +595,7 @@ public class Collaborator extends Composite implements ClickHandler {
     protected void receiveArgs(String args) {
         if (args.equals("list")) {
             readOnlyDoc = null;
+            docToken = null;
             lockedDoc = null;
             title.setValue("");
             contents.setHTML("");
@@ -546,9 +636,9 @@ public class Collaborator extends Composite implements ClickHandler {
         } 
         // Create a new document.
         else if (event.getSource().equals(createNew)) {
-            if (openTabs.getWidgetCount() > MAX_TABS - 1)
+            if (openTabs.getWidgetCount() > Parameters.MAX_TABS - 1)
                 statusUpdate("Couldn't create new document because" 
-                        + " there are already " + MAX_TABS + " documents open.");
+                        + " there are already " + Parameters.MAX_TABS + " documents open.");
             else {
                 statusUpdate("Creating document...");
                 createNewDocument();
@@ -560,12 +650,38 @@ public class Collaborator extends Composite implements ClickHandler {
                     documentList.getSelectedIndex()))) {
                 statusUpdate("Error: You already have that document open!");
             }
-            else if (openTabs.getWidgetCount() > MAX_TABS - 1)
+            else if (openTabs.getWidgetCount() > Parameters.MAX_TABS - 1)
                 statusUpdate("Couldn't open another document, since there"
-                        + " are already " + MAX_TABS + " documents open.");
+                        + " are already " + Parameters.MAX_TABS + " documents open.");
             else
                 loadDocument();
         }
+		// Starts the simulation on the selected document
+		else if (event.getSource().equals(simulate)) {
+            if (openDocKeys.contains(documentList.getValue(
+                    documentList.getSelectedIndex()))) {
+                statusUpdate("Error: You already have that document open!");
+            }
+			else {
+				openTabs.setVisible(false);	
+				simulateInfo.setVisible(true);
+				refreshList.setEnabled(false);
+				loadDoc.setEnabled(false);
+				simulate.setEnabled(false);
+				createNew.setEnabled(false);
+				startSimulation();
+			}
+		}
+		// Closes the current simulation
+		else if (event.getSource().equals(closeSim)) {
+			if (true/*ABCD STILL RUNNING SIMULATION*/)
+			{
+				/*ABCD DO STUFF AND THEN CALL closeSim()*/
+				closeSimulation();
+			}
+			else
+				closeSimulation();
+		}
         // Refreshes the current document.
         else if (event.getSource().equals(refreshButton)) {
             statusUpdate("Refreshing document...");
@@ -581,11 +697,7 @@ public class Collaborator extends Composite implements ClickHandler {
         }
         // Enables editing of the current document.
         else if (event.getSource().equals(lockButton)) {
-            if (readOnlyDoc != null) {
-                statusUpdate("Requesting editing lock for document.");
-                lockButton.setEnabled(false);
-                locker.lockDocument(readOnlyDoc.getKey());
-            }
+            lockDocument();
         }
         // Saves the current document.
         else if (event.getSource().equals(saveButton)) {
@@ -628,6 +740,7 @@ public class Collaborator extends Composite implements ClickHandler {
         } else if (readOnlyDoc != null) {
             if (readOnlyDoc.getKey().equals(key)) return;
             readOnlyDoc = null;
+            docToken = null;
         }
     }
 }

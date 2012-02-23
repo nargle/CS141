@@ -27,7 +27,7 @@ import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 		CollaboratorService {
 	
-	public static final long TIMEOUT = 1000 * 30;
+	public static final long TIMEOUT = 1000 * 300; /* 5 minutes */
 	// private static final Logger log = Logger.getLogger(CollaboratorServiceImpl.class.toString());
 	
 	/**
