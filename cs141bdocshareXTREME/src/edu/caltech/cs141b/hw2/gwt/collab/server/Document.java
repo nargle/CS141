@@ -3,8 +3,6 @@ package edu.caltech.cs141b.hw2.gwt.collab.server;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.Timer;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
@@ -14,8 +12,6 @@ import com.google.gwt.user.client.rpc.IsSerializable;
 
 import edu.caltech.cs141b.hw2.gwt.collab.shared.DocumentException;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.DocumentMetadata;
-import edu.caltech.cs141b.hw2.gwt.collab.shared.LockUnavailable;
-import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.Parameters;
 

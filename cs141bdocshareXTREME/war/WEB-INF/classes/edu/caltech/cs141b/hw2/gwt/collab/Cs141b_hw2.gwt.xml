@@ -13,6 +13,7 @@
   <!-- <inherits name='com.google.gwt.user.theme.dark.Dark'/>     -->
 
   <!-- Other module inherits                                      -->
+  <inherits name='com.google.gwt.appengine.channel.Channel'/> 
 
   <!-- Specify the app entry point class.                         -->
   <entry-point class='edu.caltech.cs141b.hw2.gwt.collab.client.CollaboratorEntryPoint'/>

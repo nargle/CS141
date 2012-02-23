@@ -54,7 +54,7 @@ public class ExpirationTimer extends TimerTask {
 			}
 		}
 		
-		// Ensures this TimerTask will not run again.
+		// Ensures this Timer will not run again.
 		cancel();
 	}
 

@@ -1,6 +1,7 @@
 package edu.caltech.cs141b.hw2.gwt.collab.client;
 
 import java.util.ArrayList;
+import com.google.gwt.user.client.Timer;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -8,7 +9,6 @@ import com.google.gwt.event.logical.shared.SelectionEvent;
 import com.google.gwt.event.logical.shared.SelectionHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.History;
-import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.DockPanel;
@@ -24,10 +24,6 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.Parameters;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
-
-import com.google.appengine.api.channel.ChannelService;
-import com.google.appengine.api.channel.ChannelServiceFactory;
-import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
 /**
  * Main class for a single Collaborator widget.
@@ -430,7 +426,7 @@ public class Collaborator extends Composite implements ClickHandler {
         // Release lock only if you already have a lock (i.e. the document has
         // been saved at least once).
         if (lockedDoc != null && lockedDoc.getKey() != null) {
-            releaser.releaseLock(lockedDoc);
+            releaser.releaseLock(lockedDoc, docToken);
         }
         // Update array lists that contain information from the current 
         // document.
@@ -478,30 +474,7 @@ public class Collaborator extends Composite implements ClickHandler {
             cancelButton.setText("Leave Queue");
             locker.lockDocument(readOnlyDoc.getKey());
             
-            
-            ChannelFactory.createChannel(token, new ChannelCreatedCallback() {
-            	  @Override
-            	  public void onChannelCreated(Channel channel) {
-            	    channel.open(new SocketListener() {
-            	      @Override
-            	      public void onOpen() {
-            	        Window.alert("Channel opened!");
-            	      }
-            	      @Override
-            	      public void onMessage(String message) {
-            	        Window.alert("Received: " + message);
-            	      }
-            	      @Override
-            	      public void onError(SocketError error) {
-            	        Window.alert("Error: " + error.getDescription());
-            	      }
-            	      @Override
-            	      public void onClose() {
-            	        Window.alert("Channel closed!");
-            	      }
-            	    });
-            	  }
-            	});
+            (new ChannelCreator(this)).schedule(1000);
         }
     }
     
@@ -514,7 +487,7 @@ public class Collaborator extends Composite implements ClickHandler {
         isReload = true;
         lockedDoc.setTitle(title.getValue());
         lockedDoc.setContents(contents.getHTML());
-        saver.saveDocument(lockedDoc);
+        saver.saveDocument(lockedDoc, docToken);
         openDocKeys.set(currentTab, readOnlyDoc.getKey());
     }
 
@@ -693,7 +666,7 @@ public class Collaborator extends Composite implements ClickHandler {
         // Cancels editing of the current document.
         else if (event.getSource().equals(cancelButton)) {
             isCancel = true;
-            releaser.releaseLock(lockedDoc);
+            releaser.releaseLock(lockedDoc, docToken);
         }
         // Enables editing of the current document.
         else if (event.getSource().equals(lockButton)) {
@@ -729,7 +702,7 @@ public class Collaborator extends Composite implements ClickHandler {
                 statusUpdate("Discarding new document.");
             }
             else if (!lockedDoc.getKey().equals(key)) {
-                releaser.releaseLock(lockedDoc);
+                releaser.releaseLock(lockedDoc, docToken);
             }
             else {
                 // Newly active item is the currently locked item.

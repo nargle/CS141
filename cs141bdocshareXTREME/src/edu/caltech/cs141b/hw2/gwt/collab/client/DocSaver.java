@@ -15,10 +15,10 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 		this.collaborator = collaborator;
 	}
 	
-	public void saveDocument(LockedDocument lockedDoc) {
+	public void saveDocument(LockedDocument lockedDoc, String token) {
 		collaborator.statusUpdate("Attemping to save document.");
 		collaborator.waitingKey = lockedDoc.getKey();
-		collaborator.collabService.saveDocument(lockedDoc, this);
+		collaborator.collabService.saveDocument(lockedDoc, token, this);
 		collaborator.saveButton.setEnabled(false);
 		collaborator.cancelButton.setEnabled(false);
 		collaborator.closeButton.setEnabled(false);
@@ -36,7 +36,8 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 					+ "; caught exception " + caught.getClass()
 					+ " with message: " + caught.getMessage());
 			GWT.log("Error saving document.", caught);
-			collaborator.releaser.releaseLock(collaborator.lockedDoc);
+			collaborator.releaser.releaseLock(collaborator.lockedDoc, 
+					collaborator.docToken);
 		}
 		if (collaborator.lockedDoc != null) {
 			collaborator.reader.gotDoc(collaborator.lockedDoc.unlock());

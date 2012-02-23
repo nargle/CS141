@@ -17,16 +17,16 @@ public class DocReleaser implements AsyncCallback<Void> {
 		this.collaborator = collaborator;
 	}
 	
-	public void releaseLock(LockedDocument lockedDoc) {
-		collaborator.statusUpdate("Releasing lock on '" + lockedDoc.getTitle()
-				+ "'.");
-		collaborator.saveButton.setEnabled(false);
-		collaborator.cancelButton.setEnabled(false);
-		collaborator.refreshButton.setEnabled(false);
-		collaborator.closeButton.setEnabled(false);
-		collaborator.deleteButton.setEnabled(false);
-		collaborator.collabService.releaseLock(lockedDoc, this);
-	}
+	public void releaseLock(LockedDocument lockedDoc, String token) {
+		  collaborator.statusUpdate("Releasing lock on '" + lockedDoc.getTitle()
+		    + "'.");
+		  collaborator.saveButton.setEnabled(false);
+		  collaborator.cancelButton.setEnabled(false);
+		  collaborator.refreshButton.setEnabled(false);
+		  collaborator.closeButton.setEnabled(false);
+		  collaborator.deleteButton.setEnabled(false);
+		  collaborator.collabService.releaseLock(lockedDoc, token, this);
+		 }
 
 	@Override
 	public void onFailure(Throwable caught) {
@@ -55,6 +55,7 @@ public class DocReleaser implements AsyncCallback<Void> {
             collaborator.isCancel = false;
 		}
         collaborator.isDeleting = false;
+        collaborator.docToken = null;
 		/*
 		Unnecessary:
 		else {
