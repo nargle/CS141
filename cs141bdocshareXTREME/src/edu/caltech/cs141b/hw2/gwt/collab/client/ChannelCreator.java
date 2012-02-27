@@ -37,24 +37,38 @@ public class ChannelCreator extends Timer {
 						public void onOpen() {
 							collaborator.statusUpdate("Channel " + 
 									collaborator.docToken + " opened.");
+							collaborator.acknowledger.
+								acknowledgeChannel(
+										collaborator.readOnlyDoc.getKey(), 
+										collaborator.docToken);
 						}
 						@Override
 						public void onMessage(String message) {
-							if (message.substring(0, 11).
-									equals("lockexpired")) {
-								collaborator.setDefaultButtons();
-								collaborator.statusUpdate("Document lock " +
-										"released.");
-								collaborator.lockedDoc = null;
-								if (collaborator.isCancel) {
-									collaborator.isReload = true;
-									collaborator.isCancel = false;
-								}
-								collaborator.isDeleting = false;
-								collaborator.docToken = null;
+						    // messageContents[0] is either:
+						    // lockexpired
+						    // lockgranted
+						    // documentdeleted
+						    // messageContents[1] is the document key
+						    String[] messageContents = message.split(";");
+						    String status = messageContents[0];
+						    String docKey = messageContents[1];
+						    
+							if (status.equals("lockexpired")) {
+							    // Do nothing for now...
+							    /*
+							    collaborator.setDefaultButtons();
+                                collaborator.statusUpdate("Document lock " +
+                                        "released.");
+                                collaborator.lockedDoc = null;
+                                if (collaborator.isCancel) {
+                                    collaborator.isReload = true;
+                                    collaborator.isCancel = false;
+                                }
+                                collaborator.isDeleting = false;
+                                collaborator.docToken = null;
+                                */
 							}
-							else if (message.substring(0, 11).
-									equals("lockgranted")) {
+							else if (status.equals("lockgranted")) {
 								collaborator.setDocLockedButtons();
 								collaborator.lockedDoc = 
 									new LockedDocument(null, null,
@@ -64,6 +78,29 @@ public class ChannelCreator extends Timer {
 											collaborator.currentTab).getText(),
 										collaborator.contentsList.get(
 											collaborator.currentTab).getText());
+								
+								
+								// New stuff to set up expiration timer
+						        
+						        System.out.println("Making a new ExpirationTimer");
+						        ExpirationTimer currentExpirationTimer = new ExpirationTimer(collaborator, docKey);
+						        currentExpirationTimer.schedule(Parameters.TIMEOUT);
+
+						        System.out.println("Done");
+							}
+							else if (status.equals("documentdeleted")) {
+							    int docIndex = collaborator.openDocKeys.indexOf(docKey);
+							    if (docIndex == -1) {
+							        System.err.println("This collaborator doesn't have this document open.");
+							    }
+							    else {
+							        collaborator.currentTab = docIndex;
+							        collaborator.openTabs.selectTab(collaborator.currentTab);
+						            collaborator.closeTab();
+							    }
+							}
+							else {
+							    System.out.println("OOPS, RECEIVED UNHANDLED MESSAGE!");
 							}
 						}
 						@Override

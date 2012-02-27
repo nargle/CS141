@@ -4,7 +4,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Logger;
 
 import javax.jdo.Extent;
 import javax.jdo.PersistenceManager;
@@ -29,7 +28,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 		CollaboratorService {
 	
 	public static final long TIMEOUT = 1000 * 30;
-	private static final Logger log = Logger.getLogger(CollaboratorServiceImpl.class.toString());
+	// private static final Logger log = Logger.getLogger(CollaboratorServiceImpl.class.toString());
 	
 	/**
 	 * Used to get a list of the currently available documents by using a

@@ -17,8 +17,10 @@ import edu.caltech.cs141b.hw2.gwt.collab.shared.DocumentMetadata;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockExpired;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockUnavailable;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
+import edu.caltech.cs141b.hw2.gwt.collab.shared.Parameters;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
 
+import com.google.appengine.api.channel.ChannelMessage;
 import com.google.appengine.api.channel.ChannelService;
 import com.google.appengine.api.channel.ChannelServiceFactory;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
@@ -77,7 +79,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	    ChannelService channelService = 
 	    		ChannelServiceFactory.getChannelService();
 	    String channelKey = channelService.createChannel(
-	    		getThreadLocalRequest().getRemoteAddr());
+	    		getThreadLocalRequest().getSession().getId());
 
 	    Transaction tx = pm.currentTransaction();
 	    
@@ -86,6 +88,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	        Document document = pm.getObjectById(Document.class, documentKey);
 	        
 	        document.addChannel(channelKey);
+	        System.err.println("document.peekChannel(): " + document.peekChannel());
 	        
 	        tx.commit();
 	    } 
@@ -154,26 +157,29 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         			throw new LockExpired("saveDocument(): " +
         			"Lock expired, so cannot save.");
         		else if(!document.getLockedBy().equals(
-        				getThreadLocalRequest().getRemoteAddr()))
+        				getThreadLocalRequest().getSession().getId()))
         			throw new LockExpired("saveDocument(): Another user has " +
         			"acquired the lock, so cannot save.");
         		else
         		{
         			document.setTitle(doc.getTitle());
         			document.setContents(doc.getContents()); //Update contents
-        			unlockedDocument = document.removeChannel(channelKey);
+        			informLockExpired(document);
+        			informLockGranted(document);
+        			unlockedDocument = new UnlockedDocument(document.getKey(), 
+        					document.getTitle(), document.getContents());
         		}
         	}
         	else
         	{
-        		String key = getThreadLocalRequest().getRemoteAddr() + " " + 
-        		currDate;
-        		System.err.println("Key: " + key);
+        		String key = getThreadLocalRequest().getSession().getId() + " " + 
+        				currDate;
         		unlockedDocument = new UnlockedDocument(key, 
         				doc.getTitle(), doc.getContents());
         		Document document = 
         			new Document(key, doc.getTitle(), doc.getContents());
         		pm.makePersistent(document); //Save new document
+        		
         	}
 
         	tx.commit();
@@ -211,25 +217,23 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         	tx.begin();
 	        Document document = 
 	        		pm.getObjectById(Document.class, doc.getKey());
-//	        if(!document.isLocked())
-//	        	throw new LockExpired("releaseLock(): " +
-//	        			"Lock expired, so no need to release.");
-//	        else if(!document.getLockedBy().equals(
-//	        		getThreadLocalRequest().getRemoteAddr()))
-//	        	throw new LockExpired("releaseLock(): Another user has " +
-//	        			"acquired the lock, so no need to release.");
-//	        else
-//	        {
-//	        	document.removeChannel(channelKey);
-//	        }
-	        
-	        document.removeChannel(channelKey);
-	        
-	        tx.commit();
+	        if(!document.isLocked())
+	        	throw new LockExpired("releaseLock(): " +
+	        			"Lock expired, so no need to release.");
+	        else if(!document.getLockedBy().equals(
+	        		getThreadLocalRequest().getSession().getId()))
+	        	throw new LockExpired("releaseLock(): Another user has " +
+	        			"acquired the lock, so no need to release.");
+	        else
+	        {
+		        document.removeChannel(channelKey);
+		        informLockGranted(document);
+		        tx.commit();
+	        }
         }
-//        catch(DocumentException e) {
-//        	System.err.println("releaseLock(): " + e.getMessage());
-//            }
+        catch(DocumentException e) {
+        	System.err.println("releaseLock(): " + e.getMessage());
+            }
         finally {
             if (tx.isActive()) {
                 // Error occurred so roll back the transaction
@@ -252,11 +256,12 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	        	throw new LockExpired("deleteDocument(): " +
 	        			"Lock expired, so can not delete document.");
 	        else if(!document.getLockedBy().equals(
-	        		getThreadLocalRequest().getRemoteAddr()))
+	        		getThreadLocalRequest().getSession().getId()))
 	        	throw new LockExpired("deleteDocument(): Another user has " +
 	        			"acquired the lock, so can not delete document.");
 	        else
 	        {
+	        	informDocumentDeleted(document);
 	        	pm.deletePersistent(document);
 	        }
 	        
@@ -274,6 +279,67 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	    }
 	    
 	}
+	
+	private void informLockGranted(Document doc)
+	{
+		// If the channelQueue is not empty, grant the lock to the next
+		// Collaborator in the queue.
+		ChannelService channelService = 
+				ChannelServiceFactory.getChannelService();
+		String newChannel = doc.peekChannel();
+		if(newChannel != null)
+		{
+			channelService.sendMessage(new 
+					ChannelMessage(newChannel, "lockgranted;" + doc.getKey()));
+			
+			Date expiryDate = new Date();
+			expiryDate.setTime(expiryDate.getTime() + Parameters.TIMEOUT);
 
+			doc.setLockedBy(newChannel);
+			doc.setLockedUntil(expiryDate);
+		}
+		else
+		{
+			doc.setLockedBy(null);
+			doc.setLockedUntil(null);
+		}
+	}
+	
+	private void informLockExpired(Document doc)
+	{
+		// Tell the Collaborator that the lock has expired on the current
+		// document.
+		ChannelService channelService = 
+				ChannelServiceFactory.getChannelService();
+		String oldChannel = doc.popChannel();
+
+		channelService.sendMessage(new 
+				ChannelMessage(oldChannel, "lockexpired;" + doc.getKey()));
+	}
+
+	private void informDocumentDeleted(Document doc)
+	{
+		ChannelService channelService = 
+				ChannelServiceFactory.getChannelService();
+		
+		while(doc.peekChannel() != null)
+		{
+			String channel = doc.popChannel();
+			channelService.sendMessage(new 
+					ChannelMessage(channel, "documentdeleted;" + doc.getKey()));
+		}
+		
+	}
+	
+	public void acknowledgeChannel(String docKey, String channelKey)
+	{
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Document doc = pm.getObjectById(Document.class, docKey);
+		
+		System.err.println("doc.peekChannel(): " + doc.peekChannel());
+		System.err.println("channelKey: " + channelKey);
+		if(doc.peekChannel() != null && doc.peekChannel().equals(channelKey))
+			informLockGranted(doc);
+	}
 }
 

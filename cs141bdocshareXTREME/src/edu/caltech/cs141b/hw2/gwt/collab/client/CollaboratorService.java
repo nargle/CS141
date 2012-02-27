@@ -76,5 +76,14 @@ public interface CollaboratorService extends RemoteService {
 	 */
 	void deleteDocument(String documentKey) throws LockExpired;
 	
+	/**
+	 * Used to acknowledge that the client is currently listening for messages
+	 * on a channel.
+	 * 
+	 * @param docKey the key of the document whose lock has been requested
+	 * @param channelKey the key of the channel that has just been created
+	 */
+	void acknowledgeChannel(String docKey, String channelKey);
+	
 }
 

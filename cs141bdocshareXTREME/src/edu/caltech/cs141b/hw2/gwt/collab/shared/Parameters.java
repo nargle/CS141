@@ -29,5 +29,29 @@ public class Parameters {
      * after 2 seconds, the third after 4 seconds, and so on.
      */
     public static final int MAX_CHANNEL_TRIES = 5;
+    
+    /**
+     * This is the minimum number of milliseconds that the thinking phase of the
+     * simulation lasts.
+     */
+    public static final int MIN_THINK_TIME = 10000;
+    
+    /**
+     * This is the maximum number of milliseconds that the thinking phase of the
+     * simulation lasts.
+     */
+    public static final int MAX_THINK_TIME = 10000;
+    
+    /**
+     * This is the minimum number of milliseconds that the eating phase of the
+     * simulation lasts.
+     */
+    public static final int MIN_EAT_TIME = 10000;
+    
+    /**
+     * This is the maximum number of milliseconds that the eating phase of the
+     * simulation lasts.
+     */
+    public static final int MAX_EAT_TIME = 10000;
 }
 

@@ -2,7 +2,6 @@ package edu.caltech.cs141b.hw2.gwt.collab.server;
 
 import java.util.Date;
 import java.util.LinkedList;
-import java.util.Timer;
 
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
@@ -13,7 +12,6 @@ import com.google.gwt.user.client.rpc.IsSerializable;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.DocumentException;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.DocumentMetadata;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
-import edu.caltech.cs141b.hw2.gwt.collab.shared.Parameters;
 
 /**
  * Wrapper class for UnlockedDocuments and LockedDocuments, with all the methods
@@ -44,8 +42,6 @@ public class Document implements IsSerializable{
     private String contents;
     @Persistent
     private LinkedList<String> channelQueue;
-    @Persistent
-    private ExpirationTimer currentExpirationTimer;
 	
 	/**
 	 * Initialize 'doc' to an UnlockedDocument object.
@@ -236,21 +232,15 @@ public class Document implements IsSerializable{
 	
 	public void addChannel(String channelKey)
 	{
-		if(channelQueue.isEmpty())
-		{
 			channelQueue.addLast(channelKey);
-			scheduleExpirationTimer(channelKey);
-		}
-		else
-			channelQueue.addLast(channelKey);
+			System.err.println("What should have been added: " + channelKey);
+			System.err.println("First element of channel queue: " + channelQueue.peekFirst());
+			System.err.println("First element of channel queue: " + channelQueue.peekLast());
 	}
 	
 	public UnlockedDocument removeChannel(String channelKey)
 	{
-		if(channelKey.equals(peekChannel()))
-			currentExpirationTimer.run();
-		else
-			channelQueue.remove(channelKey);
+		channelQueue.remove(channelKey);
 		
 		return new UnlockedDocument(this.key, this.title, this.contents);
 	}
@@ -265,22 +255,17 @@ public class Document implements IsSerializable{
 		return channelQueue.peekFirst();
 	}
 	
-	public ExpirationTimer getCurrentExpirationTimer()
-	{
-		return currentExpirationTimer;
-	}
-	
-	public void scheduleExpirationTimer(String channelKey)
-	{
-		Date expiryDate = new Date();
-		expiryDate.setTime(expiryDate.getTime() + Parameters.TIMEOUT);
-		
-		currentExpirationTimer = new ExpirationTimer(this.key);
-		(new Timer()).schedule(currentExpirationTimer, expiryDate);
-		
-		this.lockedBy = channelKey;
-		this.lockedUntil = expiryDate;
-	}
+//	public void scheduleExpirationTimer(String channelKey)
+//	{
+//		Date expiryDate = new Date();
+//		expiryDate.setTime(expiryDate.getTime() + Parameters.TIMEOUT);
+//		
+//		currentExpirationTimer = new ExpirationTimer(this.key);
+//		(new Timer()).schedule(currentExpirationTimer, expiryDate);
+//		
+//		this.lockedBy = channelKey;
+//		this.lockedUntil = expiryDate;
+//	}
 }
 
 

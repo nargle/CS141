@@ -29,6 +29,9 @@ public interface CollaboratorServiceAsync {
 	
 	void deleteDocument(String documentKey,
 			AsyncCallback<Void> callback);
+	
+	void acknowledgeChannel(String docKey, String channelKey,
+			AsyncCallback<Void> callback);
 
 }
 

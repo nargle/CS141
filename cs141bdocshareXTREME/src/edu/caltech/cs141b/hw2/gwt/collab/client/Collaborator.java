@@ -2,6 +2,7 @@ package edu.caltech.cs141b.hw2.gwt.collab.client;
 
 import java.util.ArrayList;
 import com.google.gwt.user.client.Timer;
+import com.google.gwt.user.client.Random;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -36,6 +37,7 @@ public class Collaborator extends Composite implements ClickHandler {
     protected UnlockedDocument readOnlyDoc = null;
     protected LockedDocument lockedDoc = null;
     protected String docToken = null;
+    protected String waitingKey = null;
 
     // Managing available documents.
     protected ListBox documentList = new ListBox();
@@ -59,6 +61,10 @@ public class Collaborator extends Composite implements ClickHandler {
 
     // For displaying document information and editing document content.
     protected int currentTab;
+	
+	// Used to indicate whether the program is currently running
+	// a simulation
+	protected boolean isSim;
 
     // Array list of widgets that are on each document.
     protected ArrayList<TextBox> titleList;
@@ -98,7 +104,8 @@ public class Collaborator extends Composite implements ClickHandler {
     protected DocReleaser releaser = new DocReleaser(this);
     private DocSaver saver = new DocSaver(this);
     protected DocDeleter deleter = new DocDeleter(this);
-    protected String waitingKey = null;
+    protected ChannelAcknowledger acknowledger = new ChannelAcknowledger(this);
+    
 
     // Status tracking.
     private ScrollPanel statusAreaScroll;
@@ -117,6 +124,7 @@ public class Collaborator extends Composite implements ClickHandler {
         isReload = false;
         isCancel = false;
         isDeleting = false;
+		isSim = false;
 
         // Initialize fields:
         titleList = new ArrayList<TextBox>();
@@ -231,6 +239,7 @@ public class Collaborator extends Composite implements ClickHandler {
 		simulateInfo.setSpacing(10);
 		simulateInfo.setHeight("100%");
 		simulateInfo.add(closeSim);
+		closeSim.setVisible(false);
 		openDocsPanel.add(simulateInfo);
 		simulateInfo.setVisible(false);
 
@@ -239,7 +248,7 @@ public class Collaborator extends Composite implements ClickHandler {
         eastPan.setWidth("100%");
 
         statusArea.setSpacing(3);
-        eastPan.add(new HTML("<h2>Console</h2>"));
+        eastPan.add(new HTML("<h2>Message Board</h2>"));
         statusAreaScroll = new ScrollPanel(statusArea);
         eastPan.add(statusAreaScroll);
         eastPan.setHeight("100%");
@@ -436,6 +445,7 @@ public class Collaborator extends Composite implements ClickHandler {
         cancelButton = cancelButtonList.remove(currentTab);
         deleteButton = deleteButtonList.remove(currentTab);
         closeButton = closeButtonList.remove(currentTab);
+        openDocKeys.remove(currentTab);
         titleList.remove(currentTab);
         contentsList.remove(currentTab);
         openTabs.remove(currentTab);
@@ -467,17 +477,24 @@ public class Collaborator extends Composite implements ClickHandler {
         History.newItem("new");
     }
     
+    /*
+     * Sets up the front end for locking and attempts to lock the
+     * selected document.
+     */
     public void lockDocument() {
     	if (readOnlyDoc != null) {
-            statusUpdate("Requesting editing lock for document.");
-            lockButton.setEnabled(false);
-            cancelButton.setText("Leave Queue");
-            locker.lockDocument(readOnlyDoc.getKey());
-            
-            (new ChannelCreator(this)).schedule(1000);
-        }
+    		statusUpdate("Requesting editing lock for document.");
+    		refreshButton.setEnabled(false);
+    		closeButton.setEnabled(false);
+    		lockButton.setEnabled(false);
+    		cancelButton.setText("Leave Queue");
+    		cancelButton.setEnabled(true);
+    		locker.lockDocument(readOnlyDoc.getKey());
+
+    		(new ChannelCreator(this)).schedule(1000);
+    	}
     }
-    
+
     /**
      * Saves the current document.
      */
@@ -509,15 +526,51 @@ public class Collaborator extends Composite implements ClickHandler {
 	 * document list, going through the thinking, hungry, and eating phases.
      */
     public void startSimulation() {
-        String key = documentList.getValue(documentList.getSelectedIndex());
-        /*ABCD PUT LOTS AND LOTS OF CODE HERE */
-        simulateInfo.add(new HTML("Entering <b>thinking</b> phase..."));
-		/*simulateInfo.add(new HTML("Entering thinking phase (12 seconds)"));
-		simulateInfo.add(new HTML("Entering hungry phase"));
-		simulateInfo.add(new HTML("Entering eating phase (12 seconds)"));
-		simulateInfo.add(new HTML("All done!"));*/
-		/*ABCD PUT LOTS AND LOTS OF CODE HERE */
+		//Determine a random amount of time to remain in thinking phase.
+		//Maximum and minimum thinking times are set in Parameters.java.
+		int thinkFor = Parameters.MIN_THINK_TIME + (int)(Random.nextDouble() * 
+					(Parameters.MAX_THINK_TIME - Parameters.MIN_THINK_TIME));
+        simulateInfo.add(new HTML("Entering <b>thinking</b> phase (" + 
+						thinkFor/1000.0 + " seconds)"));
+        //Wait for thinkFor milliseconds, then enter hungry phase
+        Timer t = new Timer() {
+            public void run() {
+                simulateInfo.add(new HTML("Entering <b>hungry</b> phase"));
+				//CODE: ENTER HUNGRY PHASE, QUEUE
+            }
+        };
+        t.schedule(thinkFor);
     }
+	
+	/**
+	 * Continues the simulation on the document, since the lock has now 
+	 * been received.
+	 */
+	public void gotSimLock() {
+		//Determine a random amount of time to remain in eating phase.
+		//Maximum and minimum eating times are set in Parameters.java
+		int eatFor = Parameters.MIN_EAT_TIME + (int)(Random.nextDouble() *
+					(Parameters.MAX_EAT_TIME - Parameters.MIN_EAT_TIME));
+		simulateInfo.add(new HTML("Got Lock! entering <b>eating</b> phase ("
+						+ eatFor/1000 + " seconds)"));
+        //Wait for eatFor milliseconds, then enter hungry phase
+        Timer t = new Timer() {
+            public void run() {
+                simulateInfo.add(new HTML("Done eating. Releasing lock!"));
+				//CODE: Release lock
+            }
+        };
+        t.schedule(eatFor);
+	}
+	
+	/**
+	 * Finishes the simulation on the document, now that the lock has been
+	 * released.
+	 */
+	public void releasedSimLock() {
+		simulateInfo.add(new HTML("All done!"));
+		closeSim.setVisible(true);
+	}
 	
 	/**
 	 * Closes the simulation window and resets buttons to previous state.
@@ -525,6 +578,8 @@ public class Collaborator extends Composite implements ClickHandler {
 	public void closeSimulation() {
 		while (simulateInfo.getWidgetCount() > 1)
 			simulateInfo.remove(1);
+		isSim = false;
+		closeSim.setVisible(false);
 		openTabs.setVisible(true);	
 		simulateInfo.setVisible(false);
 		refreshList.setEnabled(true);
@@ -642,18 +697,13 @@ public class Collaborator extends Composite implements ClickHandler {
 				loadDoc.setEnabled(false);
 				simulate.setEnabled(false);
 				createNew.setEnabled(false);
+				isSim = true;
 				startSimulation();
 			}
 		}
 		// Closes the current simulation
 		else if (event.getSource().equals(closeSim)) {
-			if (true/*ABCD STILL RUNNING SIMULATION*/)
-			{
-				/*ABCD DO STUFF AND THEN CALL closeSim()*/
-				closeSimulation();
-			}
-			else
-				closeSimulation();
+			closeSimulation();
 		}
         // Refreshes the current document.
         else if (event.getSource().equals(refreshButton)) {
@@ -678,12 +728,10 @@ public class Collaborator extends Composite implements ClickHandler {
         }
         // Closes the current document.
         else if (event.getSource().equals(closeButton)) {
-            openDocKeys.remove(currentTab);
             closeTab();
         }
         // Deletes the current document.
         else if(event.getSource().equals(deleteButton)) {
-            openDocKeys.remove(currentTab);
             deleteDocument();
             closeTab();
             History.newItem("list");
