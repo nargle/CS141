@@ -506,19 +506,19 @@ public class Collaborator extends Composite implements ClickHandler {
      * 
      * @param args history token received
      */
-    protected void receiveArgs(String args) {
-        if (args.equals("list")) {
-            readOnlyDoc = null;
-            lockedDoc = null;
-            title.setValue("");
-            contents.setHTML("");
-            setDefaultButtons();
-        } else if (args.equals("new")) {
-            createNewDocument();
-        } else {
-            reader.getDocument(args);
-        }
-    }
+//    protected void receiveArgs(String args) {
+//        if (args.equals("list")) {
+//            readOnlyDoc = null;
+//            lockedDoc = null;
+//            title.setValue("");
+//            contents.setHTML("");
+//            setDefaultButtons();
+//        } else if (args.equals("new")) {
+//            createNewDocument();
+//        } else {
+//            reader.getDocument(args);
+//        }
+//    }
 
     /**
      * Adds status lines to the console window to enable transparency of the
