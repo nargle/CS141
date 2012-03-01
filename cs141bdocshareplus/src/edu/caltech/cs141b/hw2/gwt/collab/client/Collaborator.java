@@ -62,7 +62,7 @@ public class Collaborator extends Composite implements ClickHandler {
     // Array list of widgets that are on each document.
     protected ArrayList<TextBox> titleList;
     protected ArrayList<RichTextArea> contentsList;
-    protected ArrayList<String> openDocKeys;
+    protected ArrayList<String> keyList;
     protected ArrayList<Button> refreshButtonList;
     protected ArrayList<Button> lockButtonList;
     protected ArrayList<Button> saveButtonList;
@@ -116,7 +116,7 @@ public class Collaborator extends Composite implements ClickHandler {
         // Initialize fields:
         titleList = new ArrayList<TextBox>();
         contentsList = new ArrayList<RichTextArea>();
-        openDocKeys = new ArrayList<String>();
+        keyList = new ArrayList<String>();
         refreshButtonList = new ArrayList<Button>();
         lockButtonList = new ArrayList<Button>();
         saveButtonList = new ArrayList<Button>();
@@ -172,7 +172,7 @@ public class Collaborator extends Composite implements ClickHandler {
                 closeHandlerReg = 
                     closeButton.addClickHandler(Collaborator.this);
                 
-                if(openDocKeys.get(currentTab) == null)
+                if(keyList.get(currentTab) == null)
                 {
                     // Reload the tab with locked new document.
                     isReload = true;
@@ -434,7 +434,7 @@ public class Collaborator extends Composite implements ClickHandler {
         // Do not reload the tab when creating a new document.
         isReload = false;
         
-        openDocKeys.add(null);
+        keyList.add(null);
         // Relinquish existing lock.
         discardExisting(null);
         
@@ -458,7 +458,7 @@ public class Collaborator extends Composite implements ClickHandler {
         lockedDoc.setTitle(title.getValue());
         lockedDoc.setContents(contents.getHTML());
         saver.saveDocument(lockedDoc);
-        openDocKeys.set(currentTab, readOnlyDoc.getKey());
+        keyList.set(currentTab, readOnlyDoc.getKey());
     }
 
     /**
@@ -469,7 +469,7 @@ public class Collaborator extends Composite implements ClickHandler {
         isReload = false;
         loadDoc.setEnabled(false);
         String key = documentList.getValue(documentList.getSelectedIndex());
-        openDocKeys.add(key);
+        keyList.add(key);
         statusUpdate(key);
         reader.getDocument(key);
     }
@@ -559,7 +559,7 @@ public class Collaborator extends Composite implements ClickHandler {
         }
         // Loads the currently selected document.
         else if (event.getSource().equals(loadDoc)) {
-            if (openDocKeys.contains(documentList.getValue(
+            if (keyList.contains(documentList.getValue(
                     documentList.getSelectedIndex()))) {
                 statusUpdate("Error: You already have that document open!");
             }
@@ -596,12 +596,12 @@ public class Collaborator extends Composite implements ClickHandler {
         }
         // Closes the current document.
         else if (event.getSource().equals(closeButton)) {
-            openDocKeys.remove(currentTab);
+            keyList.remove(currentTab);
             closeTab();
         }
         // Deletes the current document.
         else if(event.getSource().equals(deleteButton)) {
-            openDocKeys.remove(currentTab);
+            keyList.remove(currentTab);
             deleteDocument();
             closeTab();
             History.newItem("list");

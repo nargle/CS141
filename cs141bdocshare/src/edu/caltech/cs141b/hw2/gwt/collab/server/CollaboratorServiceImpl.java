@@ -25,10 +25,10 @@ import com.google.gwt.user.server.rpc.RemoteServiceServlet;
  */
 @SuppressWarnings("serial")
 public class CollaboratorServiceImpl extends RemoteServiceServlet implements
-		CollaboratorService {
-	
+	CollaboratorService {
+
 	// private static final Logger log = Logger.getLogger(CollaboratorServiceImpl.class.toString());
-	
+
 	/**
 	 * Used to get a list of the currently available documents by using a
 	 * PersistenceManager object and an iterator.
@@ -38,35 +38,26 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	@Override
 	public List<DocumentMetadata> getDocumentList() {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
-        Transaction tx = pm.currentTransaction();
-        List<DocumentMetadata> documentList = new LinkedList<DocumentMetadata>();
-        
-        try {
-            tx.begin();
-            
-            Extent<Document> e = pm.getExtent(Document.class, true);
-            Iterator<Document> iter = e.iterator();
-            while (iter.hasNext()) //Iterate through stored Document objects
-            {
-                Document document = (Document) iter.next();
-                DocumentMetadata documentMetadata = 
-                		document.getDocumentMetadata();
-                documentList.add(documentMetadata);
-            }
-            
-            tx.commit();
-        }
-        finally {
-            if (tx.isActive()) {
-                // Error occurred so rollback the transaction
-                tx.rollback();
-            }
-            pm.close();
-        }
-        
-        return documentList;
+		List<DocumentMetadata> documentList = new LinkedList<DocumentMetadata>();
+
+		try {
+			Extent<Document> e = pm.getExtent(Document.class, true);
+			Iterator<Document> iter = e.iterator();
+			while (iter.hasNext()) //Iterate through stored Document objects
+			{
+				Document document = (Document) iter.next();
+				DocumentMetadata documentMetadata = 
+						document.getDocumentMetadata();
+				documentList.add(documentMetadata);
+			}
+
+			return documentList;
+		}
+		finally {
+			pm.close();
+		}
 	}
-	
+
 	/**
 	 * Used to lock an existing document for editing.
 	 * 
@@ -79,32 +70,32 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	public LockedDocument lockDocument(String documentKey)
 			throws LockUnavailable {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
-	    Transaction tx = pm.currentTransaction();
-	    LockedDocument lockedDocument = null; //LockedDocument to be returned
-	    
-	    try {
-	        tx.begin();
-	        Document document = pm.getObjectById(Document.class, documentKey);
-	        
-	        Date currDate = new Date();
-	        // Sets timeout to 30 minutes beyond the current date.
-	        currDate.setTime(currDate.getTime() + Parameters.TIMEOUT);
-	        
-	        lockedDocument =
-	        		document.lock(getThreadLocalRequest().getRemoteAddr(), 
-	        				currDate);
-	        
-	        tx.commit();
-	    } 
-	    finally {
-	        if (tx.isActive()) {
-	            // Error occurred so rollback the transaction
-	            tx.rollback();
-	        }
-	        pm.close();
-	    }
-	    
-	    return lockedDocument;
+		Transaction tx = pm.currentTransaction();
+		LockedDocument lockedDocument = null; //LockedDocument to be returned
+
+		try {
+			tx.begin();
+			Document document = pm.getObjectById(Document.class, documentKey);
+
+			Date currDate = new Date();
+			// Sets timeout to 5 minutes beyond the current date.
+			currDate.setTime(currDate.getTime() + Parameters.TIMEOUT);
+
+			lockedDocument =
+					document.lock(getThreadLocalRequest().getRemoteAddr(), 
+							currDate);
+
+			tx.commit();
+
+			return lockedDocument;
+		} 
+		finally {
+			if (tx.isActive()) {
+				// Error occurred so rollback the transaction
+				tx.rollback();
+			}
+			pm.close();
+		}
 	}
 
 	/**
@@ -117,26 +108,18 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	@Override
 	public UnlockedDocument getDocument(String documentKey) {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
-        Transaction tx = pm.currentTransaction();
-        UnlockedDocument unlockedDocument = null;
-	    
-	    try {
-	        tx.begin();
-	        Document document = pm.getObjectById(Document.class, documentKey);
-	        
-	        unlockedDocument = new UnlockedDocument(document.getKey(), document.getTitle(), document.getContents());
-	        
-	        tx.commit();
-	    }
-	    finally {
-	        if (tx.isActive()) {
-	            // Error occurred so rollback the transaction
-	            tx.rollback();
-	        }
-	        pm.close();
-	    }
-	    
-	    return unlockedDocument;
+		UnlockedDocument unlockedDocument = null;
+
+		try {
+			Document document = pm.getObjectById(Document.class, documentKey);
+
+			unlockedDocument = new UnlockedDocument(document.getKey(), document.getTitle(), document.getContents());
+		}
+		finally {
+			pm.close();
+		}
+
+		return unlockedDocument;
 	}
 
 	/**
@@ -153,53 +136,59 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	public UnlockedDocument saveDocument(LockedDocument doc)
 			throws LockExpired {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
-        Transaction tx = pm.currentTransaction();
-        UnlockedDocument unlockedDocument = null;
-	    
-	    try {
-	        tx.begin();
-	        
-	        Date currDate = new Date();
-			
-			if (documentExists(doc)) {
-				if(doc.getLockedUntil().before(currDate))
-					throw new LockExpired("Lock expired!");
+		Transaction tx = pm.currentTransaction();
+		UnlockedDocument unlockedDocument = null;
+
+		Date currDate = new Date();
+		try{
+			tx.begin();
+			if(doc.getKey() != null)
+			{
+				Document document = 
+						pm.getObjectById(Document.class, doc.getKey());
+				System.err.println("Doc Key: " + document.getKey());
+				if(!document.isLocked())
+					throw new LockExpired("saveDocument(): " +
+							"Lock expired, so cannot save.");
+				else if(!document.getLockedBy().equals(
+						getThreadLocalRequest().getRemoteAddr()))
+					throw new LockExpired("saveDocument(): Another user has " +
+							"acquired the lock, so cannot save.");
 				else
 				{
-		            Document document = 
-		            		pm.getObjectById(Document.class, doc.getKey());
-		            
-		            document.setTitle(doc.getTitle());
-		            document.setContents(doc.getContents()); //Update contents
-		            unlockedDocument = document.unlock();
+					document.setTitle(doc.getTitle());
+					document.setContents(doc.getContents()); //Update contents
+					unlockedDocument = document.unlock();
 				}
-	        }
-	        
-	        else { //Document does not exist in storage already
-	        	String key = getThreadLocalRequest().getRemoteAddr() + " " + 
-	        			currDate;
-	        	unlockedDocument = new UnlockedDocument(key, 
-        				doc.getTitle(), doc.getContents());
-	            Document document = new Document(null, null, key, doc.getTitle(), doc.getContents());
-	            pm.makePersistent(document); //Save new document
-	        }
-	        
-	        tx.commit();
-	    }
-	    catch(DocumentException e) {
-	        	System.err.println("saveDocument(): " + e.getMessage());
-            }
-	    finally {
-	        if (tx.isActive()) {
-	            // Error occurred so rollback the transaction
-	            tx.rollback();
-	        }
-	        pm.close();
-	    }
-	    
-	    return unlockedDocument;
+			}
+			else
+			{
+				String key = getThreadLocalRequest().getRemoteAddr() + " " + 
+						currDate;
+				System.err.println("Key: " + key);
+				unlockedDocument = new UnlockedDocument(key, 
+						doc.getTitle(), doc.getContents());
+				Document document = 
+						new Document(key, doc.getTitle(), doc.getContents());
+				pm.makePersistent(document); //Save new document
+			}
+
+			tx.commit();
+		}
+		catch(DocumentException e) {
+			System.err.println("saveDocument(): " + e.getMessage());
+		}
+		finally {
+			if (tx.isActive()) {
+				// Error occurred so roll back the transaction
+				tx.rollback();
+			}
+			pm.close();
+		}
+
+		return unlockedDocument;
 	}
-	
+
 	/**
 	 * Used to release a lock that is no longer needed without saving.
 	 * 
@@ -212,56 +201,36 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	@Override
 	public void releaseLock(LockedDocument doc) throws LockExpired {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
-        Transaction tx = pm.currentTransaction();
-        
-        try {
-        	Date currDate = new Date();
-			if(doc.getLockedUntil().before(currDate))
-				throw new LockExpired("Lock expired!");
-        	
-            tx.begin();
-            
-            Document document = pm.getObjectById(Document.class, doc.getKey());
-            document.unlock();
-            
-            tx.commit();
-        }
-        catch(DocumentException e) {
-        	System.err.println("releaseLock(): " + e.getMessage());
-            }
-        finally {
-            if (tx.isActive()) {
-                // Error occurred so rollback the transaction
-                tx.rollback();
-            }
-            pm.close();
-        }
-    }
-	
-	
-	/**
-	 * Helper function that tests whether a certain document can be retrieved by
-	 * the persistence manager.
-	 * 
-	 * @param doc
-	 * @return
-	 */
-	private boolean documentExists(LockedDocument doc) {
-		PersistenceManager pm = PMF.get().getPersistenceManager();
-	    Extent<Document> e = pm.getExtent(Document.class, true);
-        Iterator<Document> iter = e.iterator();
-        
-	    while (iter.hasNext())
-	    {
-            Document document = (Document) iter.next();
-            if (document.getKey().equals(doc.getKey())) {
-	            return true;
-	        }
-	            
-	    }
-        
-        return false; //Document corresponding to doc not found
-	}
+		Transaction tx = pm.currentTransaction();
 
+		try {
+			tx.begin();
+			Document document = 
+					pm.getObjectById(Document.class, doc.getKey());
+			if(!document.isLocked())
+				throw new LockExpired("releaseLock(): " +
+						"Lock expired, so no need to release.");
+			else if(!document.getLockedBy().equals(
+					getThreadLocalRequest().getRemoteAddr()))
+				throw new LockExpired("releaseLock(): Another user has " +
+						"acquired the lock, so no need to release.");
+			else
+			{
+				document.unlock();
+			}
+
+			tx.commit();
+		}
+		catch(DocumentException e) {
+			System.err.println("releaseLock(): " + e.getMessage());
+		}
+		finally {
+			if (tx.isActive()) {
+				// Error occurred so roll back the transaction
+				tx.rollback();
+			}
+			pm.close();
+		}
+	}
 }
 
