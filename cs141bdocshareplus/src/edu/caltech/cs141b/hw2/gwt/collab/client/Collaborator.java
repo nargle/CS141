@@ -192,6 +192,11 @@ public class Collaborator extends Composite implements ClickHandler {
                     locker.gotDoc(lockedDoc);
                     History.newItem("new");
                 }
+                else {
+                    readOnlyDoc = new UnlockedDocument(keyList.get(currentTab), 
+                            titleList.get(currentTab).getText(), 
+                            contentsList.get(currentTab).getText());
+                }
             }
         });
 
