@@ -240,6 +240,7 @@ public class Document implements IsSerializable{
 			System.err.println("First element of channel queue: " + channelQueue.get(0));
 			System.err.println("Last element of channel queue: " + channelQueue.get(channelQueue.size()-1));
 		}
+		// channelQueue = new ArrayList<String>();
 	}
 
 	public UnlockedDocument removeChannel(String channelKey)
@@ -256,6 +257,7 @@ public class Document implements IsSerializable{
 
 	public String peekChannel()
 	{
+		System.err.println("Size of channelQueue: " + channelQueue.size());
 		if(channelQueue.size() == 0)
 			return null;
 		return channelQueue.get(0);

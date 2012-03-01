@@ -16,6 +16,7 @@ import edu.caltech.cs141b.hw2.gwt.collab.shared.DocumentMetadata;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockExpired;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockUnavailable;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
+import edu.caltech.cs141b.hw2.gwt.collab.shared.Parameters;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
 
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
@@ -27,7 +28,6 @@ import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 		CollaboratorService {
 	
-	public static final long TIMEOUT = 1000 * 300; /* 5 minutes */
 	// private static final Logger log = Logger.getLogger(CollaboratorServiceImpl.class.toString());
 	
 	/**
@@ -81,7 +81,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	        
 	        Date currDate = new Date();
 	        // Sets timeout to 30 minutes beyond the current date.
-	        currDate.setTime(currDate.getTime() + TIMEOUT);
+	        currDate.setTime(currDate.getTime() + Parameters.TIMEOUT);
 	        
 	        lockedDocument =
 	        		document.lock(getThreadLocalRequest().getRemoteAddr(), 

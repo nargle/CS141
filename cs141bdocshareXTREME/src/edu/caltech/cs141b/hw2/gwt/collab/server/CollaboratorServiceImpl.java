@@ -80,6 +80,8 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	    		ChannelServiceFactory.getChannelService();
 	    String channelKey = channelService.createChannel(
 	    		getThreadLocalRequest().getSession().getId());
+	    
+	    System.err.println(getThreadLocalRequest().getSession().getId());
 
 	    Transaction tx = pm.currentTransaction();
 	    

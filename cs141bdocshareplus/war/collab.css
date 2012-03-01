@@ -1,21 +1,44 @@
 h2 {
-	font-stretch: narrower;
-	font-weight: 500;
-	margin: 4px;
+    font-stretch: narrower;
+    font-weight: 500;
+    margin: 4px;
 }
 body{
-	text-align:center;
+    text-align:center;
 }
 #application {
-	margin: 10px;
+    margin: 10px;
 }
 .app-title {
-	font-size: 2.5em; 
-	font-family: sans-serif;
-	display: inline;	
-	margin: 10px;
-	text-align:center;
+    font-size: 2.5em; 
+    font-family: sans-serif;
+    display: inline;    
+    margin: 10px;
+    text-align:center;
 }
 .app-innerpanel {
-	margin: 0 auto 0 auto;
+    margin: 0 auto 0 auto;
 }
+.app-tab-panel {
+	border-style: none;
+}
+.app-tab-panel-container {
+	background-color: #FFFFFF;
+}
+
+/* button.gwt-Button { */
+    /*background-color: #D8D8D8*/
+/*     background-color: #FFFFFF; */
+/*     border-style: solid; */
+/*     font-family: "Courier New", Courier, monospace; */
+/* } */
+/* button.gwt-Button:hover { */
+	/*background-color: #B0B0B0;*/
+/* 	background-color: #000000; */
+/* 	border-style: solid; */
+/* } */
+/* button.gwt-Button:selected { */
+	/*background-color: #686868;*/
+/* 	background-color: "FF00FF"; */
+/* 	border-style: inset; */
+/* } */
