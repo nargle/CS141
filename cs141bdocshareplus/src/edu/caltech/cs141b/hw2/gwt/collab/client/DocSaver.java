@@ -51,8 +51,12 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 		if (collaborator.waitingKey == null || 
 				result.getKey().equals(collaborator.waitingKey)) {
 			collaborator.reader.gotDoc(result);
+			
 			// Refresh list in case title was changed.
 			collaborator.lister.getDocumentList();
+			
+			// Update list of keys of all open documents.
+			collaborator.keyList.set(collaborator.currentTab, result.getKey());
 		} else {
 			GWT.log("Saved document is not the anticipated document.");
 		}

@@ -466,7 +466,9 @@ public class Collaborator extends Composite implements ClickHandler {
         lockedDoc.setContents(contentsList.get(currentTab).getHTML());
         saver.saveDocument(lockedDoc);
         
-        keyList.set(currentTab, readOnlyDoc.getKey());
+        // Since the call to saveDocument() is asynchronous, this has been moved
+        // to DocSaver.onSuccess().
+        // keyList.set(currentTab, readOnlyDoc.getKey());
     }
 
     /**
