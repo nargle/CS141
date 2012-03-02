@@ -175,40 +175,6 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         			new Document(key, doc.getTitle(), doc.getContents());
         		pm.makePersistent(document); //Save new document
         	}
-        	//	    try {
-        	//	    	tx.begin();
-        	//	        Date currDate = new Date();
-        	//	        try {
-        	//	        	Document document = 
-        	//	        			pm.getObjectById(Document.class, doc.getKey());
-        	//	        	System.err.println("Doc Key: " + document.getKey());
-        	//	        	if(!document.isLocked())
-        	//					throw new LockExpired("saveDocument(): " +
-        	//							"Lock expired, so cannot save.");
-        	//	        	else if(!document.getLockedBy().equals(
-        	//	        			getThreadLocalRequest().getRemoteAddr()))
-        	//	        		throw new LockExpired("saveDocument(): Another user has " +
-        	//	        				"acquired the lock, so cannot save.");
-        	//	        	else
-        	//	        	{
-        	//	        		document.setTitle(doc.getTitle());
-        	//		            document.setContents(doc.getContents()); //Update contents
-        	//		            unlockedDocument = document.unlock();
-        	//	        	}
-        	//	        
-        	//	        }
-        	//	        catch (JDOObjectNotFoundException e) {
-        	//	            String key = getThreadLocalRequest().getRemoteAddr() + " " + 
-        	//	        			currDate;
-        	//	            System.err.println("Key: " + key);
-        	//	            unlockedDocument = new UnlockedDocument(key, 
-        	//        				doc.getTitle(), doc.getContents());
-        	//	            Document document = 
-        	//	            		new Document(key, doc.getTitle(), doc.getContents());
-        	//	            pm.makePersistent(document); //Save new document
-        	//	            
-        	//	            return unlockedDocument;
-        	//	        }
 
         	tx.commit();
 	    }
@@ -222,8 +188,8 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	        }
 	        pm.close();
 	    }
-	    
-	    return unlockedDocument;
+        
+		return unlockedDocument;
 	}
 	
 	/**
@@ -236,9 +202,10 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	 *         LockedDocument object cannot be used to release the lock
 	 */	
 	@Override
-	public void releaseLock(LockedDocument doc) throws LockExpired {
+	public UnlockedDocument releaseLock(LockedDocument doc) throws LockExpired {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
         Transaction tx = pm.currentTransaction();
+        UnlockedDocument unlockedDocument = null;
         
         try {
         	tx.begin();
@@ -253,7 +220,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	        			"acquired the lock, so no need to release.");
 	        else
 	        {
-	        	document.unlock();
+	        	unlockedDocument = document.unlock();
 	        }
 	        
 	        tx.commit();
@@ -268,6 +235,8 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
             }
             pm.close();
         }
+        
+        return unlockedDocument;
     }
 	
 	public void deleteDocument(String documentKey) throws LockExpired
