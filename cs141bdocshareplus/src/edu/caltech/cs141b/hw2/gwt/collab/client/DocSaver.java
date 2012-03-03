@@ -46,7 +46,7 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 		
 		TabBar tabs = collaborator.openTabs.getTabBar();
 		for(int i = 0; i < tabs.getTabCount(); i++)
-			tabs.setTabEnabled(i, false);
+			tabs.setTabEnabled(i, true);
 	}
 
 	@Override
@@ -68,7 +68,7 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 		
 		TabBar tabs = collaborator.openTabs.getTabBar();
 		for(int i = 0; i < tabs.getTabCount(); i++)
-			tabs.setTabEnabled(i, false);
+			tabs.setTabEnabled(i, true);
 	}
 	
 }

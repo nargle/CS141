@@ -356,7 +356,8 @@ public class Collaborator extends Composite implements ClickHandler {
 		mainPan.setSpacing(10);
 
 		if(title.length() > Parameters.MAX_TITLE_CHARS)
-			openTabs.add(mainPan, title.substring(0, Parameters.MAX_TITLE_CHARS - 3) + "...");
+			openTabs.add(mainPan, 
+					title.substring(0, Parameters.MAX_TITLE_CHARS - 3) + "...");
 		else
 			openTabs.add(mainPan, title);
 
