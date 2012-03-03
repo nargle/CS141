@@ -25,7 +25,7 @@ public interface CollaboratorServiceAsync {
 			AsyncCallback<UnlockedDocument> callback);
 
 	void releaseLock(LockedDocument doc, String channelKey, 
-			AsyncCallback<Void> callback);
+			AsyncCallback<UnlockedDocument> callback);
 	
 	void deleteDocument(String documentKey,
 			AsyncCallback<Void> callback);

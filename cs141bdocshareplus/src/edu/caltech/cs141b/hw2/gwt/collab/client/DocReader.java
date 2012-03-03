@@ -42,10 +42,10 @@ public class DocReader implements AsyncCallback<UnlockedDocument> {
 			if (collaborator.isReload) {
 				//If reloading a document that is already open
 				TabBar tabs = collaborator.openTabs.getTabBar();
-				//tabs.setTabText(collaborator.currentTab, result.getTitle());
 				if(result.getTitle().length() > Parameters.MAX_TITLE_CHARS)
 					tabs.setTabText(collaborator.currentTab,
-							result.getTitle().substring(0, 5) + "...");
+							result.getTitle().substring(0, 
+									Parameters.MAX_TITLE_CHARS - 3) + "...");
 				else
 					tabs.setTabText(collaborator.currentTab, result.getTitle());
 				collaborator.title.setValue(result.getTitle());

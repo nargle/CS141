@@ -5,6 +5,7 @@ import com.google.gwt.user.client.History;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.TabBar;
 
+import edu.caltech.cs141b.hw2.gwt.collab.shared.Parameters;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
 
 /**
@@ -38,6 +39,20 @@ public class DocReader implements AsyncCallback<UnlockedDocument> {
 		if (result.getKey().equals(collaborator.waitingKey)) {
 			collaborator.statusUpdate("Document '" + result.getTitle()
 					+ "' successfully retrieved.");
+			if (collaborator.isReload) {
+				//If reloading a document that is already open
+				TabBar tabs = collaborator.openTabs.getTabBar();
+				if(result.getTitle().length() > Parameters.MAX_TITLE_CHARS)
+					tabs.setTabText(collaborator.currentTab,
+							result.getTitle().substring(0, 
+									Parameters.MAX_TITLE_CHARS - 3) + "...");
+				else
+					tabs.setTabText(collaborator.currentTab, result.getTitle());
+				collaborator.title.setValue(result.getTitle());
+				collaborator.contents.setHTML(result.getContents());
+			}
+			else
+				collaborator.openDoc(result.getKey(), result.getTitle(), result.getContents());
 			gotDoc(result);
 		} else {
 			collaborator.statusUpdate("Returned document that is no longer "
@@ -54,24 +69,9 @@ public class DocReader implements AsyncCallback<UnlockedDocument> {
 	 * @param result the unlocked document that should be displayed
 	 */
 	protected void gotDoc(UnlockedDocument result) {
-		collaborator.readOnlyDoc = result;
-		if (collaborator.isReload) {
-			//If reloading a document that is already open
-			TabBar tabs = collaborator.openTabs.getTabBar();
-			//tabs.setTabText(collaborator.currentTab, result.getTitle());
-			if(result.getTitle().length() > 8)
-				tabs.setTabText(collaborator.currentTab,
-						result.getTitle().substring(0, 5) + "...");
-			else
-				tabs.setTabText(collaborator.currentTab, result.getTitle());
-			collaborator.title.setValue(result.getTitle());
-			collaborator.contents.setHTML(result.getContents());
-			collaborator.setDefaultButtons();
-		}
-		else
-			collaborator.openDoc(result.getTitle(), result.getContents());
 		collaborator.lockedDoc = null;
 		collaborator.readOnlyDoc = result;
+		collaborator.setDefaultButtons();
 		collaborator.isReload = false;
 		History.newItem(result.getKey());
 	}

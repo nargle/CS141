@@ -6,6 +6,7 @@ import com.google.gwt.user.client.ui.TabBar;
 
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockExpired;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
+import edu.caltech.cs141b.hw2.gwt.collab.shared.Parameters;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
 
 public class DocSaver implements AsyncCallback<UnlockedDocument> {
@@ -44,6 +45,8 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 			collaborator.lockedDoc = null;
 		}
 		
+		// Re-enable all the tabs that were disabled when the document started
+		// the saving process.
 		TabBar tabs = collaborator.openTabs.getTabBar();
 		for(int i = 0; i < tabs.getTabCount(); i++)
 			tabs.setTabEnabled(i, true);
@@ -66,9 +69,19 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 			GWT.log("Saved document is not the anticipated document.");
 		}
 		
+		// Re-enable all the tabs that were disabled when the document started
+		// the saving process.
 		TabBar tabs = collaborator.openTabs.getTabBar();
 		for(int i = 0; i < tabs.getTabCount(); i++)
 			tabs.setTabEnabled(i, true);
+		
+		// Change the tab title to the new title of the document.
+		if(result.getTitle().length() > Parameters.MAX_TITLE_CHARS)
+			tabs.setTabText(collaborator.currentTab,
+					result.getTitle().substring(0, 
+							Parameters.MAX_TITLE_CHARS - 3) + "...");
+		else
+			tabs.setTabText(collaborator.currentTab, result.getTitle());
 	}
 	
 }

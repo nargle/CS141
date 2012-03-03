@@ -210,10 +210,11 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	 *         LockedDocument object cannot be used to release the lock
 	 */	
 	@Override
-	public void releaseLock(LockedDocument doc, String channelKey) 
+	public UnlockedDocument releaseLock(LockedDocument doc, String channelKey) 
 			throws LockExpired {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
         Transaction tx = pm.currentTransaction();
+        UnlockedDocument unlockedDocument = null;
         
         try {
         	tx.begin();
@@ -228,10 +229,11 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	        			"acquired the lock, so no need to release.");
 	        else
 	        {
-		        document.removeChannel(channelKey);
+		        unlockedDocument = document.removeChannel(channelKey);
 		        informLockGranted(document);
-		        tx.commit();
 	        }
+	        
+	        tx.commit();
         }
         catch(DocumentException e) {
         	System.err.println("releaseLock(): " + e.getMessage());
@@ -243,6 +245,8 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
             }
             pm.close();
         }
+        
+        return unlockedDocument;
     }
 	
 	public void deleteDocument(String documentKey) throws LockExpired

@@ -32,7 +32,7 @@ public class CollaboratorEntryPoint implements EntryPoint, ValueChangeHandler<St
 		String token = event.getValue();
 		if (!token.equals(collab.getToken())) {
 			GWT.log("Got history token: " + token);
-			collab.receiveArgs(token);
+			//collab.receiveArgs(token);
 		}
 		else {
 			GWT.log("Skipping history token: " + token);

@@ -72,7 +72,7 @@ public class ChannelCreator extends Timer {
 								collaborator.setDocLockedButtons();
 								collaborator.lockedDoc = 
 									new LockedDocument(null, null,
-										collaborator.openDocKeys.get(
+										collaborator.keyList.get(
 											collaborator.currentTab),
 										collaborator.titleList.get(
 											collaborator.currentTab).getText(),
@@ -89,7 +89,7 @@ public class ChannelCreator extends Timer {
 						        System.out.println("Done");
 							}
 							else if (status.equals("documentdeleted")) {
-							    int docIndex = collaborator.openDocKeys.indexOf(docKey);
+							    int docIndex = collaborator.keyList.indexOf(docKey);
 							    if (docIndex == -1) {
 							        System.err.println("This collaborator doesn't have this document open.");
 							    }

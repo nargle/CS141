@@ -2,19 +2,20 @@ package edu.caltech.cs141b.hw2.gwt.collab.client;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.ui.TabBar;
 
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockExpired;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
 
 public class DocSaver implements AsyncCallback<UnlockedDocument> {
-	
+
 	private Collaborator collaborator;
-	
+
 	public DocSaver(Collaborator collaborator) {
 		this.collaborator = collaborator;
 	}
-	
+
 	public void saveDocument(LockedDocument lockedDoc, String token) {
 		collaborator.statusUpdate("Attemping to save document.");
 		collaborator.waitingKey = lockedDoc.getKey();
@@ -43,6 +44,10 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 			collaborator.reader.gotDoc(collaborator.lockedDoc.unlock());
 			collaborator.lockedDoc = null;
 		}
+
+		TabBar tabs = collaborator.openTabs.getTabBar();
+		for(int i = 0; i < tabs.getTabCount(); i++)
+			tabs.setTabEnabled(i, true);
 	}
 
 	@Override
@@ -52,12 +57,20 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 		if (collaborator.waitingKey == null || 
 				result.getKey().equals(collaborator.waitingKey)) {
 			collaborator.reader.gotDoc(result);
+
 			// Refresh list in case title was changed.
 			collaborator.lister.getDocumentList();
+
+			// Update list of keys of all open documents.
+			collaborator.keyList.set(collaborator.currentTab, result.getKey());
 		} else {
 			GWT.log("Saved document is not the anticipated document.");
 		}
+
+		TabBar tabs = collaborator.openTabs.getTabBar();
+		for(int i = 0; i < tabs.getTabCount(); i++)
+			tabs.setTabEnabled(i, true);
 	}
-	
+
 }
 
