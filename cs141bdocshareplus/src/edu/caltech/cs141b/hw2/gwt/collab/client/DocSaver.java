@@ -2,6 +2,7 @@ package edu.caltech.cs141b.hw2.gwt.collab.client;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.ui.TabBar;
 
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockExpired;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
@@ -42,6 +43,10 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 			collaborator.reader.gotDoc(collaborator.lockedDoc.unlock());
 			collaborator.lockedDoc = null;
 		}
+		
+		TabBar tabs = collaborator.openTabs.getTabBar();
+		for(int i = 0; i < tabs.getTabCount(); i++)
+			tabs.setTabEnabled(i, false);
 	}
 
 	@Override
@@ -60,6 +65,10 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 		} else {
 			GWT.log("Saved document is not the anticipated document.");
 		}
+		
+		TabBar tabs = collaborator.openTabs.getTabBar();
+		for(int i = 0; i < tabs.getTabCount(); i++)
+			tabs.setTabEnabled(i, false);
 	}
 	
 }
