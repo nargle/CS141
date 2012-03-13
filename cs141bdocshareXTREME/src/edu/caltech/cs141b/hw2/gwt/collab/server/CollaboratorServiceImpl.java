@@ -81,7 +81,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	    String channelKey = channelService.createChannel(
 	    		getThreadLocalRequest().getSession().getId());
 	    
-	    System.err.println(getThreadLocalRequest().getSession().getId());
+	    System.err.println("Document to be locked: " + getThreadLocalRequest().getSession().getId());
 
 	    Transaction tx = pm.currentTransaction();
 	    

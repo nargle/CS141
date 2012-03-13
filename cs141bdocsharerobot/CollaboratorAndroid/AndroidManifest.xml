@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="edu.caltech.cs141b.hw5.android"
+    android:versionCode="1"
+    android:versionName="1.0"
+    android:installLocation="preferExternal" >
+
+    <uses-sdk android:minSdkVersion="10" />
+	<uses-permission android:name="android.permission.INTERNET" />
+	
+    <application
+        android:icon="@drawable/icon"
+        android:label="@string/app_name" android:debuggable="true">
+        <activity
+            android:name=".CollaboratorAndroidActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".DocActivity" android:label="Edit a Document"
+            android:screenOrientation="portrait" >
+        </activity>        
+        <activity android:name=".DocShow" android:label="Show a Document"
+            android:screenOrientation="portrait" >
+        </activity>   
+    </application>
+    
+</manifest>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/app_full_title" android:text="Doc Share" android:textColor="#ffffff" android:textAppearance="?android:attr/textAppearanceLarge" android:textSize="45sp" android:padding="5sp"></TextView>
+    <TableLayout android:padding="5sp" android:layout_width="fill_parent" android:layout_height="wrap_content">
+        <TableRow>
+            <Button android:id="@+id/new_doc" android:layout_weight="1" android:text="New Document" android:textColor="#000000" android:textAppearance="?android:attr/textAppearanceMedium" android:textSize="20sp" android:padding="5sp"></Button>
+            <Button android:id="@+id/refresh_docs" android:layout_weight="1" android:text="Refresh List" android:textColor="#000000" android:textAppearance="?android:attr/textAppearanceMedium" android:textSize="20sp" android:padding="5sp"></Button>
+        </TableRow>
+    </TableLayout>
+    <TextView android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/list_name" android:textAppearance="?android:attr/textAppearanceLarge" android:text="Current List" android:textSize="35sp" android:padding="5sp" ></TextView>
+    <ListView android:layout_height="wrap_content" android:layout_width="fill_parent" android:id="@android:id/list" android:padding="5sp"></ListView> <!--android:listSelector="@drawable/listview_selecting"-->
+</LinearLayout>

@@ -1,0 +1,87 @@
+package cs141b;
+
+option java_package = "edu.caltech.cs141b.hw5.android.data";
+option java_outer_classname = "CollabMessages";
+option optimize_for = LITE_RUNTIME;
+
+// Protocol buffer communication between the client and the server. There is 
+// a single entry data type (RequestMessage) and a single exit data type 
+// (ResponseMessage). RequestMessage uses the field RequestType to distinguish
+// between all possible actions the client may want from the server. The rest 
+// of the fields in the class should be populated accordingly. ResponseMessage
+// uses the field StatusType to communicate the outcome of a request. If SUCCESS
+// the corresponding fields are populated.  
+
+// StatusType reflects exceptions thrown from the server.
+enum StatusType {
+	// When no errors exist, SUCCESS is indicated.  It may or may not
+	// have an accompanying explanatory text.
+	SUCCESS = 0;
+	// Thrown if no suitable error category is available.  A new category
+	// can be added; in the interim, fill in the response message when using
+	// this type.
+	UNKNOWN_ERROR = 1;
+	// Thrown if expected fields were missing or contained invalid
+	// content.  Invalid content should be identified in the response message.
+	INVALID_REQUEST = 2;
+	// Thrown if the lock requested is unavailable
+	LOCK_UNAVAILABLE = 3;
+	// Thrown when attempted to save when lock has expired
+	LOCK_EXPIRED = 4;
+}
+
+// All possible request action that correspond to the methods in 
+// CollaboratorServiceImpl
+enum RequestType {
+	GET_DOCUMENT_LIST = 0;
+	LOCK_DOCUMENT = 1;
+	GET_DOCUMENT = 2;
+	SAVE_DOCUMENT = 3;
+	RELEASE_LOCK = 4;
+}
+
+message DocumentMetaInfo {
+	required string key = 1;
+	required string title = 2;
+}
+
+message LockedDocumentInfo {
+	optional string lockedBy = 1;
+	optional int64 lockedUntil = 2;
+	optional string key = 3;
+	required string title = 4;
+	required string contents = 5;
+}
+
+message UnlockedDocumentInfo {
+	required string key = 1;
+	required string title = 2;
+	required string contents = 3;
+}
+
+// Single request data type from client to server that uses the field 
+// "requestType" to toggle between possible actions. The rest of the 
+// fields should be populated accordingly to the requestType. 
+// E.g. if requestType is GET_DOCUMENT_LIST, then the other two fields
+// should be populated
+message RequestMessage {
+	required RequestType requestType = 1;
+	optional string documentKey = 2;
+	optional LockedDocumentInfo lockedDoc = 3;
+}
+
+// Single response data type from the server to client. The outcome of
+// the request is indicated by the statusType. The rest of the 
+// fields should be populated accordingly to the requestType. Note that
+// some files are mutually exclusive, e.g. lockedDoc and unlockedDoc.
+message ResponseMessage {
+	required StatusType statusType = 1;
+	
+	// If statusType is not SUCCESS, an exception message may populate this.
+	optional string message = 2;
+	
+	// Only one of the three should be populated
+	repeated DocumentMetaInfo docMeta = 3;
+	optional LockedDocumentInfo lockedDoc = 4;
+	optional UnlockedDocumentInfo unlockedDoc = 5;
+}

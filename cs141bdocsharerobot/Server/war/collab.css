@@ -1,0 +1,21 @@
+h2 {
+	font-stretch: narrower;
+	font-weight: 500;
+	margin: 4px;
+}
+body{
+	text-align:center;
+}
+#application {
+	margin: 10px;
+}
+.app-title {
+	font-size: 2.5em; 
+	font-family: sans-serif;
+	display: inline;	
+	margin: 10px;
+	text-align:center;
+}
+.app-innerpanel {
+	margin: 0 auto 0 auto;
+}

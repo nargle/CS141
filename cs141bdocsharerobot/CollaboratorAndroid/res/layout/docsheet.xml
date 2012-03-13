@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_height="wrap_content"
+    android:layout_width="fill_parent">
+    <LinearLayout android:padding="5sp" android:layout_width="fill_parent" android:layout_height="wrap_content">
+        <Button android:text="Save Document" android:id="@+id/accept_button" android:layout_width="fill_parent" android:layout_height="wrap_content" android:textSize="30sp" android:padding="5sp"></Button>
+    </LinearLayout>
+    <ScrollView android:id="@+id/scrollView1" android:layout_height="wrap_content" android:layout_width="fill_parent">
+        <LinearLayout android:id="@+id/linearLayout1" android:layout_width="fill_parent" android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical" >
+            <TextView android:layout_width="wrap_content" android:id="@+id/textView1" android:textAppearance="?android:attr/textAppearanceLarge" android:text="Document Form" android:layout_height="wrap_content" android:textSize="30sp" android:padding="5sp" ></TextView>
+            <TextView android:layout_width="wrap_content" android:id="@+id/textView2" android:textAppearance="?android:attr/textAppearanceMedium" android:text="Title" android:layout_height="wrap_content" android:textSize="20sp" android:padding="5sp" ></TextView>
+            <EditText android:layout_width="fill_parent" android:id="@+id/title_field" android:layout_height="wrap_content" android:capitalize="sentences" android:textSize="20sp" android:padding="5sp" >
+                <requestFocus></requestFocus>
+            </EditText>
+            <TextView android:layout_width="wrap_content" android:id="@+id/textView3" android:textAppearance="?android:attr/textAppearanceMedium" android:text="Document Text" android:layout_height="wrap_content" android:textSize="20sp" android:padding="5sp"></TextView>
+            <EditText android:layout_width="fill_parent" android:id="@+id/contents_field" android:layout_height="wrap_content" android:inputType="textMultiLine|textCapSentences" android:textSize="20sp" android:padding="5sp" android:gravity="top" ></EditText>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
