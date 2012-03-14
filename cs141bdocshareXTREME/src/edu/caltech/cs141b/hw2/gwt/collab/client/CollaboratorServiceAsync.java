@@ -21,17 +21,18 @@ public interface CollaboratorServiceAsync {
 	void getDocument(String documentKey,
 			AsyncCallback<UnlockedDocument> callback);
 
-	void saveDocument(LockedDocument doc, String channelKey,
+	void saveDocument(LockedDocument doc, 
 			AsyncCallback<UnlockedDocument> callback);
 
-	void releaseLock(LockedDocument doc, String channelKey, 
+	void releaseLock(LockedDocument doc, 
 			AsyncCallback<UnlockedDocument> callback);
 	
 	void deleteDocument(String documentKey,
 			AsyncCallback<Void> callback);
 	
-	void acknowledgeChannel(String docKey, String channelKey,
+	void acknowledgeChannel(String docKey, 
 			AsyncCallback<Void> callback);
-
+	
+	void cleanup(String docKey, AsyncCallback<Void> callback);
 }
 

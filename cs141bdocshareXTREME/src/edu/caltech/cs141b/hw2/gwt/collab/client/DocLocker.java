@@ -5,6 +5,7 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockUnavailable;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
+import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
 
 /**
  * Used in conjunction with <code>CollaboratorService.lockDocument()</code>.
@@ -20,8 +21,12 @@ public class DocLocker implements AsyncCallback<String> {
 	public void lockDocument(String key) {
 		collaborator.statusUpdate("Attempting to lock document.");
 		collaborator.waitingKey = key;
+		collaborator.lockedDoc = new LockedDocument(null, null, 
+				collaborator.readOnlyDoc.getKey(),
+				collaborator.readOnlyDoc.getTitle(),
+				collaborator.readOnlyDoc.getContents());
+		collaborator.readOnlyDoc = null;
 		collaborator.collabService.lockDocument(key, this);
-		collaborator.lockButton.setEnabled(false);
 	}
 
 	@Override
@@ -35,6 +40,11 @@ public class DocLocker implements AsyncCallback<String> {
 			GWT.log("Error getting document lock.", caught);
 		}
 		collaborator.setDefaultButtons();
+		collaborator.readOnlyDoc = new UnlockedDocument(
+				collaborator.lockedDoc.getKey(),
+				collaborator.lockedDoc.getTitle(),
+				collaborator.lockedDoc.getContents());
+		collaborator.lockedDoc = null;
 	}
 
 	@Override
@@ -48,7 +58,7 @@ public class DocLocker implements AsyncCallback<String> {
 //			collaborator.releaser.releaseLock(result);
 //		}
 		
-		collaborator.docToken = token;
+		collaborator.channelToken = token;
 	}
 	
 	/**

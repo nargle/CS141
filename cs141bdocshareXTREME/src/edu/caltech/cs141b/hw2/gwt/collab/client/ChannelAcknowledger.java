@@ -14,8 +14,8 @@ public class ChannelAcknowledger implements AsyncCallback<Void> {
 		this.collaborator = collaborator;
 	}
 
-	public void acknowledgeChannel(String docKey, String channelKey) {
-		collaborator.collabService.acknowledgeChannel(docKey, channelKey, this);
+	public void acknowledgeChannel(String docKey) {
+		collaborator.collabService.acknowledgeChannel(docKey, this);
 	}
 
 	@Override
@@ -28,7 +28,8 @@ public class ChannelAcknowledger implements AsyncCallback<Void> {
 
 	@Override
 	public void onSuccess(Void v) {
-		collaborator.statusUpdate("Channel creation acknowledged.");
+		collaborator.statusUpdate("Channel creation acknowledged; waiting for" +
+				" lock to be granted.");
 	}
 
 }

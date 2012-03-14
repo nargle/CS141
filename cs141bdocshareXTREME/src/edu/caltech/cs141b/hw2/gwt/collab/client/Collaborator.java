@@ -37,8 +37,9 @@ public class Collaborator extends Composite implements ClickHandler {
 	// Track document information.
 	protected UnlockedDocument readOnlyDoc = null;
 	protected LockedDocument lockedDoc = null;
-	protected String docToken = null;
+	protected String channelToken = null;
 	protected String waitingKey = null;
+	protected ChannelCreator currentChannelCreator = null;
 
 	// Managing available documents.
 	protected ListBox documentList = new ListBox();
@@ -90,7 +91,7 @@ public class Collaborator extends Composite implements ClickHandler {
 
 	// Controls click handlers for the tabs.
 	protected HandlerRegistration refreshHandlerReg, lockHandlerReg, 
-	saveHandlerReg, cancelHandlerReg, deleteHandlerReg, closeHandlerReg;
+			saveHandlerReg, cancelHandlerReg, deleteHandlerReg, closeHandlerReg;
 
 	// Contains the currently opened documents.
 	protected TabPanel openTabs;
@@ -436,8 +437,8 @@ public class Collaborator extends Composite implements ClickHandler {
 	{
 		// Release lock only if you already have a lock (i.e. the document has
 		// been saved at least once).
-		if (lockedDoc != null && lockedDoc.getKey() != null) {
-			releaser.releaseLock(lockedDoc, docToken);
+		if (lockedDoc != null && lockedDoc.getKey() != null && !isDeleting) {
+			releaser.releaseLock(lockedDoc);
 		}
 		// Update array lists that contain information from the current 
 		// document.
@@ -498,9 +499,12 @@ public class Collaborator extends Composite implements ClickHandler {
 			lockButton.setEnabled(false);
 			cancelButton.setText("Leave Queue");
 			cancelButton.setEnabled(true);
-			locker.lockDocument(readOnlyDoc.getKey());
 
-			(new ChannelCreator(this)).schedule(1000);
+			currentChannelCreator = new ChannelCreator(this, 
+					readOnlyDoc.getKey());
+			currentChannelCreator.run();
+			
+			locker.lockDocument(readOnlyDoc.getKey());
 		}
 	}
 
@@ -520,7 +524,7 @@ public class Collaborator extends Composite implements ClickHandler {
 		for(int i = 0; i < tabs.getTabCount(); i++)
 			tabs.setTabEnabled(i, false);
 		
-		saver.saveDocument(lockedDoc, docToken);
+		saver.saveDocument(lockedDoc);
 
 		// Since the call to saveDocument() is asynchronous, this has been moved
 		// to DocSaver.onSuccess().
@@ -535,7 +539,6 @@ public class Collaborator extends Composite implements ClickHandler {
 		isReload = false;
 		loadDoc.setEnabled(false);
 		String key = documentList.getValue(documentList.getSelectedIndex());
-		statusUpdate(key);
 		reader.getDocument(key);
 	}
 
@@ -635,26 +638,6 @@ public class Collaborator extends Composite implements ClickHandler {
 	}
 
 	/**
-	 * Modifies the current state to reflect the supplied token.
-	 * 
-	 * @param args history token received
-	 */
-//	protected void receiveArgs(String args) {
-//		if (args.equals("list")) {
-//			readOnlyDoc = null;
-//			docToken = null;
-//			lockedDoc = null;
-//			title.setValue("");
-//			contents.setHTML("");
-//			setDefaultButtons();
-//		} else if (args.equals("new")) {
-//			createNewDocument();
-//		} else {
-//			reader.getDocument(args);
-//		}
-//	}
-
-	/**
 	 * Adds status lines to the console window to enable transparency of the
 	 * underlying processes.
 	 * 
@@ -735,7 +718,7 @@ public class Collaborator extends Composite implements ClickHandler {
 		// Cancels editing of the current document.
 		else if (event.getSource().equals(cancelButton)) {
 			isCancel = true;
-			releaser.releaseLock(lockedDoc, docToken);
+			releaser.releaseLock(lockedDoc);
 		}
 		// Enables editing of the current document.
 		else if (event.getSource().equals(lockButton)) {
@@ -762,7 +745,7 @@ public class Collaborator extends Composite implements ClickHandler {
 	 */
 	private void discardExisting(String key) {
 		if (lockedDoc != null && !lockedDoc.getKey().equals(key)) {
-			releaser.releaseLock(lockedDoc, docToken);
+			releaser.releaseLock(lockedDoc);
 		}
 	}
 }

@@ -18,7 +18,7 @@ public class ExpirationTimer extends Timer {
 	{
 	    if (collaborator.lockedDoc != null && docKey.equals(collaborator.lockedDoc.getKey())) {
 	        collaborator.isCancel = true;
-	        collaborator.releaser.releaseLock(collaborator.lockedDoc, collaborator.docToken);
+	        collaborator.releaser.releaseLock(collaborator.lockedDoc);
 	        collaborator.statusUpdate("Document lock " +
 	                "EXPIRED.");
 		

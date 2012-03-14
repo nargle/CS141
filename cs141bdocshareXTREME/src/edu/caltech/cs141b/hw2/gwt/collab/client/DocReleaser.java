@@ -18,7 +18,7 @@ public class DocReleaser implements AsyncCallback<UnlockedDocument> {
 		this.collaborator = collaborator;
 	}
 	
-	public void releaseLock(LockedDocument lockedDoc, String token) {
+	public void releaseLock(LockedDocument lockedDoc) {
 		  collaborator.statusUpdate("Releasing lock on '" + lockedDoc.getTitle()
 		    + "'.");
 		  collaborator.saveButton.setEnabled(false);
@@ -26,7 +26,7 @@ public class DocReleaser implements AsyncCallback<UnlockedDocument> {
 		  collaborator.refreshButton.setEnabled(false);
 		  collaborator.closeButton.setEnabled(false);
 		  collaborator.deleteButton.setEnabled(false);
-		  collaborator.collabService.releaseLock(lockedDoc, token, this);
+		  collaborator.collabService.releaseLock(lockedDoc, this);
 		 }
 
 	@Override
@@ -41,8 +41,19 @@ public class DocReleaser implements AsyncCallback<UnlockedDocument> {
 	            GWT.log("Error releasing document.", caught);			          
 			}
 		}
+		collaborator.channelToken = null;
 		collaborator.setDefaultButtons();
 		collaborator.isDeleting = false;
+		if(collaborator.currentChannelCreator.socket != null)
+		{
+			collaborator.currentChannelCreator.socket.close();
+			collaborator.currentChannelCreator.cleanupReminder.cancel();
+		}
+		else
+			collaborator.currentChannelCreator.cancel();
+		if(collaborator.currentChannelCreator.expirationTimer != null)
+			collaborator.currentChannelCreator.expirationTimer.cancel();
+		collaborator.currentChannelCreator = null;
 	}
 
 	@Override
@@ -50,6 +61,17 @@ public class DocReleaser implements AsyncCallback<UnlockedDocument> {
 		collaborator.statusUpdate("Document lock released.");
 		collaborator.lockedDoc = null;
 		collaborator.readOnlyDoc = result;
+		collaborator.channelToken = null;
+		if(collaborator.currentChannelCreator.socket != null)
+		{
+			collaborator.currentChannelCreator.socket.close();
+			collaborator.currentChannelCreator.cleanupReminder.cancel();
+		}
+		else
+			collaborator.currentChannelCreator.cancel();
+		if(collaborator.currentChannelCreator.expirationTimer != null)
+			collaborator.currentChannelCreator.expirationTimer.cancel();
+		collaborator.currentChannelCreator = null;
 		collaborator.setDefaultButtons();
 		
 		if(collaborator.isCancel)

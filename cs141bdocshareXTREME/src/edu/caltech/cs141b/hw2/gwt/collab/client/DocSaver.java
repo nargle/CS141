@@ -17,10 +17,10 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 		this.collaborator = collaborator;
 	}
 
-	public void saveDocument(LockedDocument lockedDoc, String token) {
+	public void saveDocument(LockedDocument lockedDoc) {
 		collaborator.statusUpdate("Attemping to save document.");
 		collaborator.waitingKey = lockedDoc.getKey();
-		collaborator.collabService.saveDocument(lockedDoc, token, this);
+		collaborator.collabService.saveDocument(lockedDoc, this);
 		collaborator.saveButton.setEnabled(false);
 		collaborator.cancelButton.setEnabled(false);
 		collaborator.closeButton.setEnabled(false);
@@ -32,20 +32,22 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 	@Override
 	public void onFailure(Throwable caught) {
 		if (caught instanceof LockExpired) {
-			collaborator.statusUpdate("Lock had already expired; save failed.");
+			collaborator.statusUpdate("Save failed: " + caught.getMessage());
 		} else {
 			collaborator.statusUpdate("Error saving document"
 					+ "; caught exception " + caught.getClass()
 					+ " with message: " + caught.getMessage());
 			GWT.log("Error saving document.", caught);
-			collaborator.releaser.releaseLock(collaborator.lockedDoc, 
-					collaborator.docToken);
+			collaborator.releaser.releaseLock(collaborator.lockedDoc);
 		}
 		if (collaborator.lockedDoc != null) {
 			collaborator.reader.gotDoc(collaborator.lockedDoc.unlock());
-			collaborator.lockedDoc = null;
 		}
 
+		if(collaborator.currentChannelCreator.expirationTimer != null)
+			collaborator.currentChannelCreator.expirationTimer.cancel();
+		collaborator.currentChannelCreator = null;
+		
 		// Re-enable all the tabs that were disabled when the document started
 		// the saving process.
 		TabBar tabs = collaborator.openTabs.getTabBar();
@@ -69,6 +71,10 @@ public class DocSaver implements AsyncCallback<UnlockedDocument> {
 		} else {
 			GWT.log("Saved document is not the anticipated document.");
 		}
+		
+		if(collaborator.currentChannelCreator.expirationTimer != null)
+			collaborator.currentChannelCreator.expirationTimer.cancel();
+		collaborator.currentChannelCreator = null;
 
 		// Re-enable all the tabs that were disabled when the document started
 		// the saving process.

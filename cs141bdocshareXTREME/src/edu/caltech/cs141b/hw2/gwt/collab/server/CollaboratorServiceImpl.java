@@ -75,32 +75,31 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	@Override
 	public String lockDocument(String documentKey)
 			throws LockUnavailable {
-		PersistenceManager pm = PMF.get().getPersistenceManager();
+//		PersistenceManager pm = PMF.get().getPersistenceManager();
 	    ChannelService channelService = 
 	    		ChannelServiceFactory.getChannelService();
 	    String channelKey = channelService.createChannel(
 	    		getThreadLocalRequest().getSession().getId());
 	    
-	    System.err.println("Document to be locked: " + getThreadLocalRequest().getSession().getId());
+	    System.err.println("User ID attempting to lock document: " + getThreadLocalRequest().getSession().getId());
 
-	    Transaction tx = pm.currentTransaction();
-	    
-	    try {
-	        tx.begin();
-	        Document document = pm.getObjectById(Document.class, documentKey);
-	        
-	        document.addChannel(channelKey);
-	        System.err.println("document.peekChannel(): " + document.peekChannel());
-	        
-	        tx.commit();
-	    } 
-	    finally {
-	        if (tx.isActive()) {
-	            // Error occurred so rollback the transaction
-	            tx.rollback();
-	        }
-	        pm.close();
-	    }
+//	    Transaction tx = pm.currentTransaction();
+//	    
+//	    try {
+//	        tx.begin();
+//	        Document document = pm.getObjectById(Document.class, documentKey);
+//	        
+//	        document.addUser(getThreadLocalRequest().getSession().getId());
+//	        
+//	        tx.commit();
+//	    } 
+//	    finally {
+//	        if (tx.isActive()) {
+//	            // Error occurred so rollback the transaction
+//	            tx.rollback();
+//	        }
+//	        pm.close();
+//	    }
 	    
 	    return channelKey;
 	}
@@ -141,20 +140,18 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	 *         LockedDocument object cannot be used to modify the document
 	 */
 	@Override
-	public UnlockedDocument saveDocument(LockedDocument doc, String channelKey)
+	public UnlockedDocument saveDocument(LockedDocument doc)
 			throws LockExpired {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
         Transaction tx = pm.currentTransaction();
         UnlockedDocument unlockedDocument = null;
 	    
-        tx.begin();
         Date currDate = new Date();
         try{
         	if(doc.getKey() != null)
         	{
         		Document document = 
         			pm.getObjectById(Document.class, doc.getKey());
-        		System.err.println("Doc Key: " + document.getKey());
         		if(!document.isLocked())
         			throw new LockExpired("saveDocument(): " +
         			"Lock expired, so cannot save.");
@@ -164,12 +161,13 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         			"acquired the lock, so cannot save.");
         		else
         		{
+        			tx.begin();
         			document.setTitle(doc.getTitle());
         			document.setContents(doc.getContents()); //Update contents
-        			informLockExpired(document);
-        			informLockGranted(document);
-        			unlockedDocument = new UnlockedDocument(document.getKey(), 
-        					document.getTitle(), document.getContents());
+        			unlockedDocument = document.removeUser(
+    		        		getThreadLocalRequest().getSession().getId());
+        			tx.commit();
+        			informLockGranted(doc.getKey());
         		}
         	}
         	else
@@ -180,11 +178,11 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         				doc.getTitle(), doc.getContents());
         		Document document = 
         			new Document(key, doc.getTitle(), doc.getContents());
+        		tx.begin();
         		pm.makePersistent(document); //Save new document
-        		
+        		tx.commit();
         	}
 
-        	tx.commit();
 	    }
 	    catch(DocumentException e) {
 	        	System.err.println("saveDocument(): " + e.getMessage());
@@ -210,34 +208,23 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	 *         LockedDocument object cannot be used to release the lock
 	 */	
 	@Override
-	public UnlockedDocument releaseLock(LockedDocument doc, String channelKey) 
+	public UnlockedDocument releaseLock(LockedDocument doc) 
 			throws LockExpired {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
         Transaction tx = pm.currentTransaction();
         UnlockedDocument unlockedDocument = null;
         
         try {
+        	Document document = 
+        			pm.getObjectById(Document.class, doc.getKey());
+        	String currentUser = document.peekUser();
         	tx.begin();
-	        Document document = 
-	        		pm.getObjectById(Document.class, doc.getKey());
-	        if(!document.isLocked())
-	        	throw new LockExpired("releaseLock(): " +
-	        			"Lock expired, so no need to release.");
-	        else if(!document.getLockedBy().equals(
-	        		getThreadLocalRequest().getSession().getId()))
-	        	throw new LockExpired("releaseLock(): Another user has " +
-	        			"acquired the lock, so no need to release.");
-	        else
-	        {
-		        unlockedDocument = document.removeChannel(channelKey);
-		        informLockGranted(document);
-	        }
-	        
-	        tx.commit();
+        	unlockedDocument = document.removeUser(
+        			getThreadLocalRequest().getSession().getId());
+        	tx.commit();
+        	if(!document.peekUser().equals(currentUser))
+        		informLockGranted(document.getKey());
         }
-        catch(DocumentException e) {
-        	System.err.println("releaseLock(): " + e.getMessage());
-            }
         finally {
             if (tx.isActive()) {
                 // Error occurred so roll back the transaction
@@ -249,14 +236,13 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         return unlockedDocument;
     }
 	
-	public void deleteDocument(String documentKey) throws LockExpired
+	public void deleteDocument(String docKey) throws LockExpired
 	{
 		PersistenceManager pm = PMF.get().getPersistenceManager();
 	    Transaction tx = pm.currentTransaction();
 	    
 	    try {
-	        tx.begin();
-	        Document document = pm.getObjectById(Document.class, documentKey);
+	        Document document = pm.getObjectById(Document.class, docKey);
 	        
 	        if(!document.isLocked())
 	        	throw new LockExpired("deleteDocument(): " +
@@ -267,15 +253,12 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	        			"acquired the lock, so can not delete document.");
 	        else
 	        {
-	        	informDocumentDeleted(document);
+	        	informDocumentDeleted(docKey);
+	        	tx.begin();
 	        	pm.deletePersistent(document);
+	        	tx.commit();
 	        }
-	        
-	        tx.commit();
 	    }
-	    catch(DocumentException e) {
-        	System.err.println("deleteDocument(): " + e.getMessage());
-            }
 	    finally {
 	        if (tx.isActive()) {
 	            // Error occurred so roll back the transaction
@@ -286,66 +269,151 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	    
 	}
 	
-	private void informLockGranted(Document doc)
+	private void informLockGranted(String docKey)
 	{
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Transaction tx = pm.currentTransaction();
+		Document doc = pm.getObjectById(Document.class, docKey);
+		
 		// If the channelQueue is not empty, grant the lock to the next
 		// Collaborator in the queue.
 		ChannelService channelService = 
 				ChannelServiceFactory.getChannelService();
-		String newChannel = doc.peekChannel();
-		if(newChannel != null)
+		String newUser = doc.peekUser();
+		if(newUser != null)
 		{
 			channelService.sendMessage(new 
-					ChannelMessage(newChannel, "lockgranted;" + doc.getKey()));
+					ChannelMessage(newUser, "titleupdated;" + 
+							doc.getTitle()));
+			channelService.sendMessage(new 
+					ChannelMessage(newUser, "contentsupdated;" + 
+							doc.getContents()));
 			
 			Date expiryDate = new Date();
 			expiryDate.setTime(expiryDate.getTime() + Parameters.TIMEOUT);
 
-			doc.setLockedBy(newChannel);
-			doc.setLockedUntil(expiryDate);
+			try
+			{
+				tx.begin();
+				doc.setLockedBy(newUser);
+				doc.setLockedUntil(expiryDate);
+				tx.commit();
+			}
+			finally {
+		        if (tx.isActive()) {
+		            // Error occurred so roll back the transaction
+		            tx.rollback();
+		        }
+		        pm.close();
+		    }
 		}
 		else
 		{
-			doc.setLockedBy(null);
-			doc.setLockedUntil(null);
+			try
+			{
+				doc.setLockedBy(null);
+				doc.setLockedUntil(null);
+			}
+			finally {
+		        if (tx.isActive()) {
+		            // Error occurred so roll back the transaction
+		            tx.rollback();
+		        }
+		        pm.close();
+		    }
 		}
 	}
-	
-	private void informLockExpired(Document doc)
+
+	private void informDocumentDeleted(String docKey)
 	{
-		// Tell the Collaborator that the lock has expired on the current
-		// document.
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Document doc = pm.getObjectById(Document.class, docKey);
+	    Transaction tx = pm.currentTransaction();
+	    
 		ChannelService channelService = 
 				ChannelServiceFactory.getChannelService();
-		String oldChannel = doc.popChannel();
-
-		channelService.sendMessage(new 
-				ChannelMessage(oldChannel, "lockexpired;" + doc.getKey()));
-	}
-
-	private void informDocumentDeleted(Document doc)
-	{
-		ChannelService channelService = 
-				ChannelServiceFactory.getChannelService();
+		String user = "";
 		
-		while(doc.peekChannel() != null)
-		{
-			String channel = doc.popChannel();
-			channelService.sendMessage(new 
-					ChannelMessage(channel, "documentdeleted;" + doc.getKey()));
+		try {
+			tx.begin();
+			while(doc.peekUser() != null)
+			{
+				user = doc.popUser();
+				channelService.sendMessage(new 
+						ChannelMessage(user, "documentdeleted;" + doc.getKey()));
+			}
+			tx.commit();
 		}
-		
+		finally {
+	        if (tx.isActive()) {
+	            // Error occurred so roll back the transaction
+	            tx.rollback();
+	        }
+	        pm.close();
+	    }
 	}
 	
-	public void acknowledgeChannel(String docKey, String channelKey)
+	public void acknowledgeChannel(String docKey)
 	{
 		PersistenceManager pm = PMF.get().getPersistenceManager();
 		Document doc = pm.getObjectById(Document.class, docKey);
 		
-		System.err.println("doc.peekChannel(): " + doc.peekChannel());
-		System.err.println("channelKey: " + channelKey);
-		if(doc.peekChannel() != null && doc.peekChannel().equals(channelKey))
-			informLockGranted(doc);
+	    Transaction tx = pm.currentTransaction();
+	    
+	    try {
+	        tx.begin();
+	        Document document = pm.getObjectById(Document.class, docKey);
+	        
+	        document.addUser(getThreadLocalRequest().getSession().getId());
+	        
+	        tx.commit();
+	    } 
+	    finally {
+	        if (tx.isActive()) {
+	            // Error occurred so roll back the transaction
+	            tx.rollback();
+	        }
+	        pm.close();
+	    }
+	    
+	    System.err.println("Acknowledging channel creation by user " + 
+	    		getThreadLocalRequest().getSession().getId());
+		
+		if(doc.peekUser() != null && doc.peekUser().equals(
+				getThreadLocalRequest().getSession().getId()))
+			informLockGranted(docKey);
+	}
+	
+	public void cleanup(String docKey)
+	{
+		System.err.println("Initiating cleanup on document " + docKey + ".");
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Document doc = pm.getObjectById(Document.class, docKey);
+
+		Transaction tx = pm.currentTransaction();
+
+		System.err.println("Document is locked until " + doc.getLockedUntil() +
+				"; current date is " + (new Date()) + ".");
+		if(doc.getLockedUntil().before(new Date()))
+		{
+			try {
+				tx.begin();
+				System.err.println("Removing user " + doc.peekUser() + " on " +
+						"document " + docKey + ".");
+				doc.popUser();
+				tx.commit();
+			}
+			finally {
+				if (tx.isActive()) {
+					// Error occurred so roll back the transaction
+					tx.rollback();
+				}
+			}
+			
+			informLockGranted(docKey);
+		}
+		
+		pm.close();
 	}
 }
 

@@ -53,7 +53,7 @@ public interface CollaboratorService extends RemoteService {
 	 * @throws LockExpired if the locking primitives in the supplied
 	 *         LockedDocument object cannot be used to modify the document
 	 */
-	UnlockedDocument saveDocument(LockedDocument doc, String channelKey) 
+	UnlockedDocument saveDocument(LockedDocument doc) 
 			throws LockExpired;
 	
 	/**
@@ -65,7 +65,7 @@ public interface CollaboratorService extends RemoteService {
 	 * @throws LockExpired if the locking primitives in the supplied
 	 *         LockedDocument object cannot be used to release the lock
 	 */
-	UnlockedDocument releaseLock(LockedDocument doc, String channelKey) 
+	UnlockedDocument releaseLock(LockedDocument doc) 
 			throws LockExpired;
 	
 	/**
@@ -82,9 +82,15 @@ public interface CollaboratorService extends RemoteService {
 	 * on a channel.
 	 * 
 	 * @param docKey the key of the document whose lock has been requested
-	 * @param channelKey the key of the channel that has just been created
 	 */
-	void acknowledgeChannel(String docKey, String channelKey);
+	void acknowledgeChannel(String docKey);
 	
+	/**
+	 * Used to remind the server to clean up any dead users at the front of the
+	 * queue for the document identified by 'docKey'. 
+	 * 
+	 * @param docKey the key of the document to be cleaned
+	 */
+	void cleanup(String docKey);
 }
 

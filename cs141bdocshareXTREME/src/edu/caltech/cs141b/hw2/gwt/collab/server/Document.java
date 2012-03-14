@@ -41,7 +41,7 @@ public class Document implements IsSerializable{
 	@Persistent
 	private String contents;
 	@Persistent
-	private ArrayList<String> channelQueue;
+	private ArrayList<String> userQueue;
 
 	/**
 	 * Initialize 'doc' to an UnlockedDocument object.
@@ -55,7 +55,7 @@ public class Document implements IsSerializable{
 		this.title = title;
 		this.contents = contents;
 
-		this.channelQueue = new ArrayList<String>();
+		this.userQueue = new ArrayList<String>();
 	}
 
 	/**
@@ -124,12 +124,8 @@ public class Document implements IsSerializable{
 	 * @throws DocumentException if 'doc' is not a LockedDocument or if
 	 * it is not a valid document type
 	 */
-	public String getLockedBy() throws DocumentException {
-		if(!isLocked())
-			throw new DocumentException("Document: Document is unlocked, so " +
-					"cannot invoke 'getLockedBy()'.");
-		else
-			return lockedBy;
+	public String getLockedBy() {
+	    return lockedBy;
 	}
 
 	public void setLockedBy(String lockedBy)
@@ -144,12 +140,8 @@ public class Document implements IsSerializable{
 	 * @throws DocumentException if 'doc' is not a LockedDocument or if
 	 * it is not a valid document type
 	 */
-	public Date getLockedUntil() throws DocumentException {
-		if(!isLocked())
-			throw new DocumentException("Document: Document is unlocked, so " +
-					"cannot invoke 'getLockedUntil()'.");
-		else
-			return lockedUntil;
+	public Date getLockedUntil() {
+		return lockedUntil;
 	}
 
 	public void setLockedUntil(Date lockedUntil)
@@ -216,8 +208,8 @@ public class Document implements IsSerializable{
 	 * @throws DocumentException if 'doc' is not a valid document type
 	 */
 	public boolean isLocked() {
-		return this.lockedUntil != null && (this.lockedUntil).after(new Date())
-				&& this.lockedBy != null;
+		return lockedUntil != null && lockedUntil.after(new Date())
+				&& lockedBy != null;
 	}
 
 	/**
@@ -230,37 +222,35 @@ public class Document implements IsSerializable{
 		return new DocumentMetadata(this.getKey(), this.getTitle());
 	}
 
-	public void addChannel(String channelKey)
+	public void addUser(String userKey)
 	{
-		channelQueue.add(channelKey);
-		System.err.println("What should have been added: " + channelKey);
-		System.err.println("There are " + channelQueue.size() + " keys in the channel queue");
-		if(channelQueue.size() > 0)
+		userQueue.add(userKey);
+		System.err.println("There are " + userQueue.size() + " keys in the user queue");
+		if(userQueue.size() > 0)
 		{
-			System.err.println("First element of channel queue: " + channelQueue.get(0));
-			System.err.println("Last element of channel queue: " + channelQueue.get(channelQueue.size()-1));
+			System.err.println("First element of user queue: " + userQueue.get(0));
+			System.err.println("Last element of user queue: " + userQueue.get(userQueue.size()-1));
 		}
-		// channelQueue = new ArrayList<String>();
+		// userQueue = new ArrayList<String>();
 	}
 
-	public UnlockedDocument removeChannel(String channelKey)
+	public UnlockedDocument removeUser(String userKey)
 	{
-		channelQueue.remove(channelKey);
+		userQueue.remove(userKey);
 
 		return new UnlockedDocument(this.key, this.title, this.contents);
 	}
 
-	public String popChannel()
+	public String popUser()
 	{
-		return channelQueue.remove(0);
+		return userQueue.remove(0);
 	}
 
-	public String peekChannel()
+	public String peekUser()
 	{
-		System.err.println("Size of channelQueue: " + channelQueue.size());
-		if(channelQueue.size() == 0)
+		if(userQueue.size() == 0)
 			return null;
-		return channelQueue.get(0);
+		return userQueue.get(0);
 	}
 
 	// public void scheduleExpirationTimer(String channelKey)

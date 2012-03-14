@@ -9,6 +9,18 @@ public class Parameters {
 	public static final int TIMEOUT = 1000 * 300;
 	
 	/**
+	 * When a client tries to lock a document, he is put in a queue of clients
+	 * that are trying to lock the document. Every 'CLEANUP_INTERVAL_REMINDER'
+	 * milliseconds, the client sends a reminder to the server to check if the
+	 * client at the front of the queue has exceeded his allotted time.
+	 * 
+	 * Under normal circumstances, this should never happen, but if a user
+	 * closes his browser window while he possesses a lock or is waiting in line
+	 * for one, this is how the server knows to give the lock to the next user.
+	 */
+	public static final int CLEANUP_REMINDER_INTERVAL = TIMEOUT;
+	
+	/**
 	 * This is the maximum number of tabs that can be open in the application
 	 * window at the same time.
 	 */
@@ -28,7 +40,7 @@ public class Parameters {
      * lock for a document. The first attempt is made after 1 second, the second
      * after 2 seconds, the third after 4 seconds, and so on.
      */
-    public static final int MAX_CHANNEL_TRIES = 5;
+    public static final int MAX_CHANNEL_TRIES = 30;
     
     /**
      * This is the minimum number of milliseconds that the thinking phase of the

@@ -1,14 +1,17 @@
 package edu.caltech.cs141b.hw2.gwt.collab.client;
 
+import java.util.Date;
+
 import com.google.gwt.user.client.Timer;
+import com.google.gwt.user.client.ui.TabBar;
 
 import com.google.gwt.appengine.channel.client.Channel;
 import com.google.gwt.appengine.channel.client.ChannelFactory;
+import com.google.gwt.appengine.channel.client.Socket;
 import com.google.gwt.appengine.channel.client.SocketError;
 import com.google.gwt.appengine.channel.client.SocketListener;
 import com.google.gwt.appengine.channel.client.ChannelFactory.ChannelCreatedCallback;
 
-import edu.caltech.cs141b.hw2.gwt.collab.shared.LockedDocument;
 import edu.caltech.cs141b.hw2.gwt.collab.shared.Parameters;
 
 
@@ -17,30 +20,41 @@ public class ChannelCreator extends Timer {
 
 	private int iterations;
 	private Collaborator collaborator;
+	private String docKey, newTitle, newContents;
+	protected Socket socket;
+	protected CleanupReminder cleanupReminder;
+	protected ExpirationTimer expirationTimer;
 
-	public ChannelCreator(Collaborator collaborator)
+	public ChannelCreator(Collaborator collaborator, String docKey)
 	{
 		iterations = 1;
 		this.collaborator = collaborator;
+		this.docKey = docKey;
+		newTitle = null;
+		newContents = null;
+		socket = null;
+		cleanupReminder = new CleanupReminder(collaborator, docKey);
+		expirationTimer = null;
 	}
 
 	public void run()
 	{
-		if(collaborator.docToken != null)
+		if(collaborator.channelToken != null)
 		{
-			ChannelFactory.createChannel(collaborator.docToken, 
+			cleanupReminder.run();
+			cleanupReminder.scheduleRepeating(
+					Parameters.CLEANUP_REMINDER_INTERVAL);
+			ChannelFactory.createChannel(collaborator.channelToken, 
 					new ChannelCreatedCallback() {
 				@Override
 				public void onChannelCreated(Channel channel) {
-					channel.open(new SocketListener() {
+					socket = channel.open(new SocketListener() {
 						@Override
 						public void onOpen() {
-							collaborator.statusUpdate("Channel " + 
-									collaborator.docToken + " opened.");
+							/*collaborator.statusUpdate("Channel " + 
+									collaborator.docToken + " opened.");*/
 							collaborator.acknowledger.
-								acknowledgeChannel(
-										collaborator.readOnlyDoc.getKey(), 
-										collaborator.docToken);
+								acknowledgeChannel(docKey);
 						}
 						@Override
 						public void onMessage(String message) {
@@ -50,68 +64,127 @@ public class ChannelCreator extends Timer {
 						    // documentdeleted
 						    // messageContents[1] is the document key
 						    String[] messageContents = message.split(";");
-						    String status = messageContents[0];
-						    String docKey = messageContents[1];
+						    String messageType = messageContents[0];
+						    String messagePayload = message.substring(
+						    		messageType.length() + 1);
 						    
-							if (status.equals("lockexpired")) {
-							    // Do nothing for now...
-							    /*
-							    collaborator.setDefaultButtons();
-                                collaborator.statusUpdate("Document lock " +
-                                        "released.");
-                                collaborator.lockedDoc = null;
-                                if (collaborator.isCancel) {
-                                    collaborator.isReload = true;
-                                    collaborator.isCancel = false;
-                                }
-                                collaborator.isDeleting = false;
-                                collaborator.docToken = null;
-                                */
+						    System.err.println("Message type: " + 
+						    			messageType + ".");
+						    System.err.println("Message contents: " + 
+						    			messagePayload + ".");
+						    
+						    if (messageType.equals("titleupdated")) {
+								newTitle = messagePayload;
+								if(newContents != null)
+								{
+									collaborator.setDocLockedButtons();
+									collaborator.lockedDoc.setTitle(
+											newTitle);
+									collaborator.lockedDoc.setContents(
+											newContents);
+									
+									TabBar tabs = 
+											collaborator.openTabs.getTabBar();
+									if(newTitle.length() > 
+											Parameters.MAX_TITLE_CHARS)
+										tabs.setTabText(collaborator.currentTab,
+												newTitle.substring(0, 
+												Parameters.MAX_TITLE_CHARS - 3)
+												+ "...");
+									else
+										tabs.setTabText(collaborator.currentTab,
+												newTitle);
+									collaborator.title.setValue(newTitle);
+									collaborator.contents.setHTML(newContents);
+									
+							        expirationTimer = new 
+							        		ExpirationTimer(collaborator, 
+							        				docKey);
+							        expirationTimer.
+							        		schedule(Parameters.TIMEOUT);
+							        
+							        Date expiryTime = new Date();
+							        expiryTime.setTime(expiryTime.getTime() + 
+							        		Parameters.TIMEOUT);
+							        collaborator.statusUpdate("Lock granted;" +
+							        		" will expire at " + expiryTime);
+							        
+							        cleanupReminder.cancel();
+							        socket.close();
+								}
 							}
-							else if (status.equals("lockgranted")) {
-								collaborator.setDocLockedButtons();
-								collaborator.lockedDoc = 
-									new LockedDocument(null, null,
-										collaborator.keyList.get(
-											collaborator.currentTab),
-										collaborator.titleList.get(
-											collaborator.currentTab).getText(),
-										collaborator.contentsList.get(
-											collaborator.currentTab).getText());
-								
-								
-								// New stuff to set up expiration timer
-						        
-						        System.out.println("Making a new ExpirationTimer");
-						        ExpirationTimer currentExpirationTimer = new ExpirationTimer(collaborator, docKey);
-						        currentExpirationTimer.schedule(Parameters.TIMEOUT);
-
-						        System.out.println("Done");
+							else if (messageType.equals("contentsupdated")) {
+								newContents = messagePayload;
+								if(newTitle != null)
+								{
+									collaborator.setDocLockedButtons();
+									collaborator.lockedDoc.setTitle(
+											newTitle);
+									collaborator.lockedDoc.setContents(
+											newContents);
+									
+									TabBar tabs = 
+											collaborator.openTabs.getTabBar();
+									if(newTitle.length() > 
+											Parameters.MAX_TITLE_CHARS)
+										tabs.setTabText(collaborator.currentTab,
+												newTitle.substring(0, 
+												Parameters.MAX_TITLE_CHARS - 3)
+												+ "...");
+									else
+										tabs.setTabText(collaborator.currentTab,
+												newTitle);
+									collaborator.title.setValue(newTitle);
+									collaborator.contents.setHTML(newContents);
+									
+							        ExpirationTimer currentExpirationTimer = new 
+							        		ExpirationTimer(collaborator, 
+							        				docKey);
+							        currentExpirationTimer.
+							        		schedule(Parameters.TIMEOUT);
+							        
+							        Date expiryTime = new Date();
+							        expiryTime.setTime(expiryTime.getTime() + 
+							        		Parameters.TIMEOUT);
+							        collaborator.statusUpdate("Lock granted;" +
+							        		" will expire at " + expiryTime);
+							        
+							        cleanupReminder.cancel();
+							        socket.close();
+								}
 							}
-							else if (status.equals("documentdeleted")) {
-							    int docIndex = collaborator.keyList.indexOf(docKey);
+							else if (messageType.equals("documentdeleted")) {
+							    int docIndex = collaborator.keyList.indexOf(
+							    		messagePayload);
 							    if (docIndex == -1) {
-							        System.err.println("This collaborator doesn't have this document open.");
+							        System.err.println("This collaborator " +
+							        		"doesn't have this document open.");
 							    }
 							    else {
 							        collaborator.currentTab = docIndex;
-							        collaborator.openTabs.selectTab(collaborator.currentTab);
+							        collaborator.openTabs.selectTab(
+							        		collaborator.currentTab);
 						            collaborator.closeTab();
+						            collaborator.statusUpdate("Open document " +
+						            		"was deleted by another user.");
 							    }
+							    
+							    socket.close();
 							}
 							else {
-							    System.out.println("OOPS, RECEIVED UNHANDLED MESSAGE!");
+							    System.out.println("OOPS, RECEIVED UNHANDLED " +
+							    		"MESSAGE!");
 							}
 						}
 						@Override
 						public void onError(SocketError error) {
 							collaborator.statusUpdate("Channel " + 
-									collaborator.docToken + " errored.");
+									collaborator.channelToken + " errored.");
 						}
 						@Override
 						public void onClose() {
-							collaborator.statusUpdate("Channel " + 
-									collaborator.docToken + " closed.");
+							collaborator.statusUpdate("Channel closed; no " +
+									"longer waiting for lock.");
 						}
 					});
 				}
@@ -124,8 +197,12 @@ public class ChannelCreator extends Timer {
 			schedule(iterations * 1000);
 		}
 		else
+		{
+			System.out.println("ChannelCreator expired without receiving" +
+					"channel key.");
+			collaborator.setDefaultButtons();
 			cancel();
+		}
 	}
-
 }
 
