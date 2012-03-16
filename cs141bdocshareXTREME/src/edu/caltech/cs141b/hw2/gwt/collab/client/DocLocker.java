@@ -26,7 +26,7 @@ public class DocLocker implements AsyncCallback<String> {
 				collaborator.readOnlyDoc.getTitle(),
 				collaborator.readOnlyDoc.getContents());
 		collaborator.readOnlyDoc = null;
-		collaborator.collabService.lockDocument(key, this);
+		collaborator.collabService.lockDocument(key, collaborator.clientID, this);
 	}
 
 	@Override

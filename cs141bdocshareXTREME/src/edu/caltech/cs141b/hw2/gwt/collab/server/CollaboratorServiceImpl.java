@@ -8,6 +8,7 @@ import java.util.List;
 // import java.util.logging.Logger;
 
 import javax.jdo.Extent;
+import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Transaction;
 
@@ -31,8 +32,6 @@ import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 @SuppressWarnings("serial")
 public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 		CollaboratorService {
-	
-	// private static final Logger log = Logger.getLogger(CollaboratorServiceImpl.class.toString());
 	
 	/**
 	 * Used to get a list of the currently available documents by using a
@@ -73,33 +72,13 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	 * @throws LockUnavailable if a lock cannot be obtained
 	 */
 	@Override
-	public String lockDocument(String documentKey)
+	public String lockDocument(String documentKey, String clientID)
 			throws LockUnavailable {
-//		PersistenceManager pm = PMF.get().getPersistenceManager();
 	    ChannelService channelService = 
 	    		ChannelServiceFactory.getChannelService();
-	    String channelKey = channelService.createChannel(
-	    		getThreadLocalRequest().getSession().getId());
+	    String channelKey = channelService.createChannel(clientID);
 	    
-	    System.err.println("User ID attempting to lock document: " + getThreadLocalRequest().getSession().getId());
-
-//	    Transaction tx = pm.currentTransaction();
-//	    
-//	    try {
-//	        tx.begin();
-//	        Document document = pm.getObjectById(Document.class, documentKey);
-//	        
-//	        document.addUser(getThreadLocalRequest().getSession().getId());
-//	        
-//	        tx.commit();
-//	    } 
-//	    finally {
-//	        if (tx.isActive()) {
-//	            // Error occurred so rollback the transaction
-//	            tx.rollback();
-//	        }
-//	        pm.close();
-//	    }
+	    System.err.println("User ID attempting to lock document: " + clientID);
 	    
 	    return channelKey;
 	}
@@ -140,7 +119,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	 *         LockedDocument object cannot be used to modify the document
 	 */
 	@Override
-	public UnlockedDocument saveDocument(LockedDocument doc)
+	public UnlockedDocument saveDocument(LockedDocument doc, String clientID)
 			throws LockExpired {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
         Transaction tx = pm.currentTransaction();
@@ -155,8 +134,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         		if(!document.isLocked())
         			throw new LockExpired("saveDocument(): " +
         			"Lock expired, so cannot save.");
-        		else if(!document.getLockedBy().equals(
-        				getThreadLocalRequest().getSession().getId()))
+        		else if(!document.getLockedBy().equals(clientID))
         			throw new LockExpired("saveDocument(): Another user has " +
         			"acquired the lock, so cannot save.");
         		else
@@ -164,15 +142,14 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         			tx.begin();
         			document.setTitle(doc.getTitle());
         			document.setContents(doc.getContents()); //Update contents
-        			unlockedDocument = document.removeUser(
-    		        		getThreadLocalRequest().getSession().getId());
+        			unlockedDocument = document.removeUser(clientID);
         			tx.commit();
         			informLockGranted(doc.getKey());
         		}
         	}
         	else
         	{
-        		String key = getThreadLocalRequest().getSession().getId() + " " + 
+        		String key = clientID + " " + 
         				currDate;
         		unlockedDocument = new UnlockedDocument(key, 
         				doc.getTitle(), doc.getContents());
@@ -208,7 +185,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	 *         LockedDocument object cannot be used to release the lock
 	 */	
 	@Override
-	public UnlockedDocument releaseLock(LockedDocument doc) 
+	public UnlockedDocument releaseLock(LockedDocument doc, String clientID) 
 			throws LockExpired {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
         Transaction tx = pm.currentTransaction();
@@ -219,10 +196,10 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         			pm.getObjectById(Document.class, doc.getKey());
         	String currentUser = document.peekUser();
         	tx.begin();
-        	unlockedDocument = document.removeUser(
-        			getThreadLocalRequest().getSession().getId());
+        	unlockedDocument = document.removeUser(clientID);
         	tx.commit();
-        	if(!document.peekUser().equals(currentUser))
+        	if(document.peekUser() != null && 
+        			!document.peekUser().equals(currentUser))
         		informLockGranted(document.getKey());
         }
         finally {
@@ -236,7 +213,8 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
         return unlockedDocument;
     }
 	
-	public void deleteDocument(String docKey) throws LockExpired
+	public void deleteDocument(String docKey, String clientID) 
+			throws LockExpired
 	{
 		PersistenceManager pm = PMF.get().getPersistenceManager();
 	    Transaction tx = pm.currentTransaction();
@@ -247,8 +225,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	        if(!document.isLocked())
 	        	throw new LockExpired("deleteDocument(): " +
 	        			"Lock expired, so can not delete document.");
-	        else if(!document.getLockedBy().equals(
-	        		getThreadLocalRequest().getSession().getId()))
+	        else if(!document.getLockedBy().equals(clientID))
 	        	throw new LockExpired("deleteDocument(): Another user has " +
 	        			"acquired the lock, so can not delete document.");
 	        else
@@ -311,8 +288,10 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 		{
 			try
 			{
+			    tx.begin();
 				doc.setLockedBy(null);
 				doc.setLockedUntil(null);
+				tx.commit();
 			}
 			finally {
 		        if (tx.isActive()) {
@@ -353,7 +332,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	    }
 	}
 	
-	public void acknowledgeChannel(String docKey)
+	public void acknowledgeChannel(String docKey, String clientID)
 	{
 		PersistenceManager pm = PMF.get().getPersistenceManager();
 		Document doc = pm.getObjectById(Document.class, docKey);
@@ -363,8 +342,7 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	    try {
 	        tx.begin();
 	        Document document = pm.getObjectById(Document.class, docKey);
-	        
-	        document.addUser(getThreadLocalRequest().getSession().getId());
+	        document.addUser(clientID);
 	        
 	        tx.commit();
 	    } 
@@ -377,10 +355,9 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 	    }
 	    
 	    System.err.println("Acknowledging channel creation by user " + 
-	    		getThreadLocalRequest().getSession().getId());
+	    		clientID);
 		
-		if(doc.peekUser() != null && doc.peekUser().equals(
-				getThreadLocalRequest().getSession().getId()))
+		if(doc.peekUser() != null && doc.peekUser().equals(clientID))
 			informLockGranted(docKey);
 	}
 	
@@ -394,14 +371,25 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 
 		System.err.println("Document is locked until " + doc.getLockedUntil() +
 				"; current date is " + (new Date()) + ".");
-		if(doc.getLockedUntil().before(new Date()))
+		if(doc.getLockedUntil() != null && 
+				doc.getLockedUntil().before(new Date()))
 		{
 			try {
-				tx.begin();
-				System.err.println("Removing user " + doc.peekUser() + " on " +
-						"document " + docKey + ".");
-				doc.popUser();
-				tx.commit();
+				if(doc.peekUser() != null)
+				{
+					tx.begin();
+					System.err.println("Removing user " + doc.peekUser() + " on " +
+							"document " + docKey + ".");
+					doc.popUser();
+					tx.commit();
+				}
+				else
+				{
+				    tx.begin();
+					doc.setLockedBy(null);
+					doc.setLockedUntil(null);
+					tx.commit();
+				}
 			}
 			finally {
 				if (tx.isActive()) {
@@ -414,6 +402,57 @@ public class CollaboratorServiceImpl extends RemoteServiceServlet implements
 		}
 		
 		pm.close();
+	}
+	
+	/**
+	 * Returns an integer ID for a client.
+	 * 
+	 * @return requested ID.
+	 */
+	public String getID() {
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		ClientIDGenerator gen;
+		String id = "";
+		try {
+    		gen = pm.getObjectById(ClientIDGenerator.class, 
+    				"ClientIDGenerator");
+    		Transaction tx = pm.currentTransaction();
+            try {
+                tx.begin();
+                id = gen.generateClientID();
+                tx.commit();
+            }
+            finally {
+                if (tx.isActive()) {
+                    // Error occurred so roll back the transaction
+                    tx.rollback();
+                }
+                pm.close();
+            }
+            
+            return id;
+		}
+		catch(JDOObjectNotFoundException e)
+		{
+		    gen = new ClientIDGenerator();
+            id = gen.generateClientID();
+            
+            Transaction tx = pm.currentTransaction();
+            try {
+                tx.begin();
+                pm.makePersistent(gen);
+                tx.commit();
+            }
+            finally {
+                if (tx.isActive()) {
+                    // Error occurred so roll back the transaction
+                    tx.rollback();
+                }
+                pm.close();
+            }
+            
+            return id;
+		}
 	}
 }
 

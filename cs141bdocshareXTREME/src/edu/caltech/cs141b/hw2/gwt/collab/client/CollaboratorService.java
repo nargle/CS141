@@ -32,7 +32,7 @@ public interface CollaboratorService extends RemoteService {
 	 *         and the locking primitives necessary to save the document
 	 * @throws LockUnavailable if a lock cannot be obtained
 	 */
-	String lockDocument(String documentKey) throws LockUnavailable;
+	String lockDocument(String documentKey, String clientID) throws LockUnavailable;
 	
 	/**
 	 * Used to retrieve a document in read-only mode.
@@ -53,7 +53,7 @@ public interface CollaboratorService extends RemoteService {
 	 * @throws LockExpired if the locking primitives in the supplied
 	 *         LockedDocument object cannot be used to modify the document
 	 */
-	UnlockedDocument saveDocument(LockedDocument doc) 
+	UnlockedDocument saveDocument(LockedDocument doc, String clientID) 
 			throws LockExpired;
 	
 	/**
@@ -65,7 +65,7 @@ public interface CollaboratorService extends RemoteService {
 	 * @throws LockExpired if the locking primitives in the supplied
 	 *         LockedDocument object cannot be used to release the lock
 	 */
-	UnlockedDocument releaseLock(LockedDocument doc) 
+	UnlockedDocument releaseLock(LockedDocument doc, String clientID) 
 			throws LockExpired;
 	
 	/**
@@ -75,7 +75,7 @@ public interface CollaboratorService extends RemoteService {
 	 * @throws LockExpired if the locking primitives in the supplied
 	 *         LockedDocument object cannot be used to delete the document
 	 */
-	void deleteDocument(String documentKey) throws LockExpired;
+	void deleteDocument(String documentKey, String clientID) throws LockExpired;
 	
 	/**
 	 * Used to acknowledge that the client is currently listening for messages
@@ -83,7 +83,7 @@ public interface CollaboratorService extends RemoteService {
 	 * 
 	 * @param docKey the key of the document whose lock has been requested
 	 */
-	void acknowledgeChannel(String docKey);
+	void acknowledgeChannel(String docKey, String clientID);
 	
 	/**
 	 * Used to remind the server to clean up any dead users at the front of the
@@ -92,5 +92,12 @@ public interface CollaboratorService extends RemoteService {
 	 * @param docKey the key of the document to be cleaned
 	 */
 	void cleanup(String docKey);
+	
+	/**
+	 * Used to retrieve an ID from the server.
+	 * 
+	 * @param id ID returned from the server to the client.
+	 */
+	String getID();
 }
 

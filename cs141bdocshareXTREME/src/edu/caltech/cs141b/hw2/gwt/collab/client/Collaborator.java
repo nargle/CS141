@@ -10,6 +10,7 @@ import com.google.gwt.event.logical.shared.SelectionEvent;
 import com.google.gwt.event.logical.shared.SelectionHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.History;
+import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.DockPanel;
@@ -33,6 +34,10 @@ import edu.caltech.cs141b.hw2.gwt.collab.shared.UnlockedDocument;
 public class Collaborator extends Composite implements ClickHandler {
 
 	protected CollaboratorServiceAsync collabService;
+	
+	// Client ID received from the server.
+	protected String clientID;
+	private int simCount;
 
 	// Track document information.
 	protected UnlockedDocument readOnlyDoc = null;
@@ -120,6 +125,16 @@ public class Collaborator extends Composite implements ClickHandler {
 	 * @param collabService
 	 */
 	public Collaborator(CollaboratorServiceAsync collabService) {
+	    
+	    // Request an ID from the server.
+	    collabService.getID(new AsyncCallback<String>() {
+	        public void onFailure(Throwable caught) {
+	            // Uh oh...
+	        }
+	        public void onSuccess(String id) {
+	            clientID = id;
+	        }
+	    });
 
 		this.collabService = collabService;
 
@@ -356,7 +371,6 @@ public class Collaborator extends Composite implements ClickHandler {
 		buttons.add(closeButton);
 
 		mainPan.add(buttons);
-		mainPan.add(deleteButton);
 
 		// Create text area for title
 		TextBox titleBox = new TextBox();
@@ -376,6 +390,8 @@ public class Collaborator extends Composite implements ClickHandler {
 		contentsBox.setHTML(contents);
 
 		mainPan.add(contentsBox);
+		
+		mainPan.add(deleteButton);
 
 		keyList.add(currentTab, key);
 		titleList.add(currentTab, titleBox);
@@ -391,6 +407,12 @@ public class Collaborator extends Composite implements ClickHandler {
 
 		openTabs.selectTab(openTabs.getWidgetCount() - 1);
 
+		if(!isSim)
+		{
+			loadDoc.setEnabled(true);
+			simulate.setEnabled(true);
+		}
+		
 		statusUpdate("Done opening new document.");
 
 		return mainPan;
@@ -538,6 +560,7 @@ public class Collaborator extends Composite implements ClickHandler {
 		// Don't reload the tab when loading the document.
 		isReload = false;
 		loadDoc.setEnabled(false);
+		simulate.setEnabled(false);
 		String key = documentList.getValue(documentList.getSelectedIndex());
 		reader.getDocument(key);
 	}
@@ -551,15 +574,25 @@ public class Collaborator extends Composite implements ClickHandler {
 		//Maximum and minimum thinking times are set in Parameters.java.
 		int thinkFor = Parameters.MIN_THINK_TIME + (int)(Random.nextDouble() * 
 				(Parameters.MAX_THINK_TIME - Parameters.MIN_THINK_TIME));
+		simulateInfo.add(new HTML("Iteration number: " + simCount));
 		simulateInfo.add(new HTML("Entering <b>thinking</b> phase (" + 
-				thinkFor/1000.0 + " seconds)"));
+				(double)(thinkFor)/1000.0 + " seconds)"));
 		//Wait for thinkFor milliseconds, then enter hungry phase
 		Timer t = new Timer() {
 			public void run() {
 				simulateInfo.add(new HTML("Entering <b>hungry</b> phase"));
-				//CODE: ENTER HUNGRY PHASE, QUEUE
+				simulateInfo.add(new HTML("Requesting document lock"));
+				
+				// Enter hungry phase: Request a lock on the document.
+				// The transition from hungry -> eating is handled in 
+				// ChannelCreator.java in onMessage(String).
+				lockDocument();
+				
 			}
 		};
+		
+        statusUpdate("Thinking for " + thinkFor + " millisecond(s).");
+        // Think for a set amount of time
 		t.schedule(thinkFor);
 	}
 
@@ -573,12 +606,28 @@ public class Collaborator extends Composite implements ClickHandler {
 		int eatFor = Parameters.MIN_EAT_TIME + (int)(Random.nextDouble() *
 				(Parameters.MAX_EAT_TIME - Parameters.MIN_EAT_TIME));
 		simulateInfo.add(new HTML("Got Lock! entering <b>eating</b> phase ("
-				+ eatFor/1000 + " seconds)"));
+				+ (double)(eatFor)/1000 + " seconds)"));
 		//Wait for eatFor milliseconds, then enter hungry phase
 		Timer t = new Timer() {
 			public void run() {
+			    contents.setHTML(contents.getHTML() + "<br/>***<b>" + 
+			    		"SimId: </b>" +	clientID + " <b> SimIter: </b>" +
+			    		simCount + "***");
+			    
 				simulateInfo.add(new HTML("Done eating. Releasing lock!"));
-				//CODE: Release lock
+				
+				saveDocument();
+				
+		        simCount++;
+		        
+		        if (simCount > Parameters.MAX_SIM_ITER) {
+		            closeTab();
+		            releasedSimLock();
+		            //closeSimulation();
+		        }
+		        else {
+		            startSimulation();
+		        }
 			}
 		};
 		t.schedule(eatFor);
@@ -597,8 +646,14 @@ public class Collaborator extends Composite implements ClickHandler {
 	 * Closes the simulation window and resets buttons to previous state.
 	 */
 	public void closeSimulation() {
+	    // Re-enable tab selection
+	    TabBar tabs = openTabs.getTabBar();
+        for(int i = 0; i < tabs.getTabCount(); i++)
+            tabs.setTabEnabled(i, true);
+        
 		while (simulateInfo.getWidgetCount() > 1)
 			simulateInfo.remove(1);
+		
 		isSim = false;
 		closeSim.setVisible(false);
 		openTabs.setVisible(true);	
@@ -607,6 +662,8 @@ public class Collaborator extends Composite implements ClickHandler {
 		loadDoc.setEnabled(true);
 		simulate.setEnabled(true);
 		createNew.setEnabled(true);
+		
+		statusUpdate("Simulation closed");
 	}
 
 	/**
@@ -693,6 +750,11 @@ public class Collaborator extends Composite implements ClickHandler {
 				statusUpdate("Error: You already have that document open!");
 			}
 			else {
+		        // Disable tab changing during the simulation
+		        TabBar tabs = openTabs.getTabBar();
+		        for(int i = 0; i < tabs.getTabCount(); i++)
+		            tabs.setTabEnabled(i, false);
+			    
 				openTabs.setVisible(false);	
 				simulateInfo.setVisible(true);
 				refreshList.setEnabled(false);
@@ -700,7 +762,26 @@ public class Collaborator extends Composite implements ClickHandler {
 				simulate.setEnabled(false);
 				createNew.setEnabled(false);
 				isSim = true;
-				startSimulation();
+				
+				simCount = 1;
+				
+		        // Load document
+		        if (keyList.contains(documentList.getValue(
+		                documentList.getSelectedIndex()))) {
+		            statusUpdate("Error: You already have that document open!");
+		            closeSimulation();
+		            return;
+		        }
+		        else if (openTabs.getWidgetCount() > Parameters.MAX_TABS - 1) {
+		            statusUpdate("Couldn't open another document, since there"
+		                    + " are already " + Parameters.MAX_TABS + " documents open.");
+		            closeSimulation();
+		            return;
+		        }
+		        else {
+		            statusUpdate("Trying to load document...");
+		            loadDocument();
+		        }
 			}
 		}
 		// Closes the current simulation

@@ -18,7 +18,7 @@ public class Parameters {
 	 * closes his browser window while he possesses a lock or is waiting in line
 	 * for one, this is how the server knows to give the lock to the next user.
 	 */
-	public static final int CLEANUP_REMINDER_INTERVAL = TIMEOUT;
+	public static final int CLEANUP_REMINDER_INTERVAL = TIMEOUT / 4;
 	
 	/**
 	 * This is the maximum number of tabs that can be open in the application
@@ -46,7 +46,7 @@ public class Parameters {
      * This is the minimum number of milliseconds that the thinking phase of the
      * simulation lasts.
      */
-    public static final int MIN_THINK_TIME = 10000;
+    public static final int MIN_THINK_TIME = 5000;
     
     /**
      * This is the maximum number of milliseconds that the thinking phase of the
@@ -58,12 +58,18 @@ public class Parameters {
      * This is the minimum number of milliseconds that the eating phase of the
      * simulation lasts.
      */
-    public static final int MIN_EAT_TIME = 10000;
+    public static final int MIN_EAT_TIME = 5000;
     
     /**
      * This is the maximum number of milliseconds that the eating phase of the
      * simulation lasts.
      */
     public static final int MAX_EAT_TIME = 10000;
+    
+    /**
+     * This is the maximum number of times a simulation will run every time you
+     * click the simulation button.
+     */
+    public static final int MAX_SIM_ITER = 4;
 }
 

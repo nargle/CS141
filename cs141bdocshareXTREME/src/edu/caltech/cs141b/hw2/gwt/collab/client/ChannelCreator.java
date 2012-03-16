@@ -41,9 +41,6 @@ public class ChannelCreator extends Timer {
 	{
 		if(collaborator.channelToken != null)
 		{
-			cleanupReminder.run();
-			cleanupReminder.scheduleRepeating(
-					Parameters.CLEANUP_REMINDER_INTERVAL);
 			ChannelFactory.createChannel(collaborator.channelToken, 
 					new ChannelCreatedCallback() {
 				@Override
@@ -111,6 +108,10 @@ public class ChannelCreator extends Timer {
 							        
 							        cleanupReminder.cancel();
 							        socket.close();
+							        
+							        // Start eating phase.
+							        if(collaborator.isSim)
+							            collaborator.gotSimLock();
 								}
 							}
 							else if (messageType.equals("contentsupdated")) {
@@ -151,6 +152,10 @@ public class ChannelCreator extends Timer {
 							        
 							        cleanupReminder.cancel();
 							        socket.close();
+							        
+							        // Start eating phase.
+							        if(collaborator.isSim)
+							            collaborator.gotSimLock();
 								}
 							}
 							else if (messageType.equals("documentdeleted")) {
@@ -189,6 +194,10 @@ public class ChannelCreator extends Timer {
 					});
 				}
 			});
+			
+            //cleanupReminder.run();
+            //cleanupReminder.scheduleRepeating(Parameters.CLEANUP_REMINDER_INTERVAL);
+            
 			cancel();
 		}
 		else if(iterations < Parameters.MAX_CHANNEL_TRIES)

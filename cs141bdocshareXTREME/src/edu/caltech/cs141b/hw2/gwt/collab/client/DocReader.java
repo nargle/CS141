@@ -30,7 +30,11 @@ public class DocReader implements AsyncCallback<UnlockedDocument> {
 				+ "; caught exception " + caught.getClass()
 				+ " with message: " + caught.getMessage());
 		GWT.log("Error getting document lock.", caught);
-		collaborator.loadDoc.setEnabled(true);
+		if(!collaborator.isSim)
+		{
+			collaborator.loadDoc.setEnabled(true);
+			collaborator.simulate.setEnabled(true);
+		}
 	}
 
 	@Override
@@ -57,7 +61,16 @@ public class DocReader implements AsyncCallback<UnlockedDocument> {
 			collaborator.statusUpdate("Returned document that is no longer "
 					+ "expected; discarding.");
 		}
-		collaborator.loadDoc.setEnabled(true);
+		
+		if(!collaborator.isSim)
+		{
+			collaborator.loadDoc.setEnabled(true);
+			collaborator.simulate.setEnabled(true);
+		}
+		else
+		{
+		    collaborator.startSimulation();
+		}
 	}
 	
 	/**

@@ -15,7 +15,8 @@ public class ChannelAcknowledger implements AsyncCallback<Void> {
 	}
 
 	public void acknowledgeChannel(String docKey) {
-		collaborator.collabService.acknowledgeChannel(docKey, this);
+		collaborator.collabService.acknowledgeChannel(docKey, 
+		        collaborator.clientID, this);
 	}
 
 	@Override

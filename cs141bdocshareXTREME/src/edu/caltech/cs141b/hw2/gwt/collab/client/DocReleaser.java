@@ -26,7 +26,7 @@ public class DocReleaser implements AsyncCallback<UnlockedDocument> {
 		  collaborator.refreshButton.setEnabled(false);
 		  collaborator.closeButton.setEnabled(false);
 		  collaborator.deleteButton.setEnabled(false);
-		  collaborator.collabService.releaseLock(lockedDoc, this);
+		  collaborator.collabService.releaseLock(lockedDoc, collaborator.clientID, this);
 		 }
 
 	@Override

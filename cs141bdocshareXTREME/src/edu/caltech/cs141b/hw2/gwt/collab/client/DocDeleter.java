@@ -17,7 +17,7 @@ public class DocDeleter implements AsyncCallback<Void> {
 	public void deleteDocument(String key) {
 		collaborator.statusUpdate("Deleting document " + key + ".");
 		collaborator.waitingKey = key;
-		collaborator.collabService.deleteDocument(key, this);
+		collaborator.collabService.deleteDocument(key, collaborator.clientID, this);
 	}
 
 	@Override

@@ -224,6 +224,8 @@ public class Document implements IsSerializable{
 
 	public void addUser(String userKey)
 	{
+	    for(int i = 0; i < userQueue.size(); i++)
+	        System.err.println("Element of userQueue before addition: " + userQueue.get(0));
 		userQueue.add(userKey);
 		System.err.println("There are " + userQueue.size() + " keys in the user queue");
 		if(userQueue.size() > 0)

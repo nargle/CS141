@@ -15,24 +15,26 @@ public interface CollaboratorServiceAsync {
 
 	void getDocumentList(AsyncCallback<List<DocumentMetadata>> callback);
 
-	void lockDocument(String documentKey,
+	void lockDocument(String documentKey, String clientID, 
 			AsyncCallback<String> callback);
 
 	void getDocument(String documentKey,
 			AsyncCallback<UnlockedDocument> callback);
 
-	void saveDocument(LockedDocument doc, 
+	void saveDocument(LockedDocument doc, String clientID, 
 			AsyncCallback<UnlockedDocument> callback);
 
-	void releaseLock(LockedDocument doc, 
+	void releaseLock(LockedDocument doc, String clientID, 
 			AsyncCallback<UnlockedDocument> callback);
 	
-	void deleteDocument(String documentKey,
+	void deleteDocument(String documentKey, String clientID, 
 			AsyncCallback<Void> callback);
 	
-	void acknowledgeChannel(String docKey, 
+	void acknowledgeChannel(String docKey, String clientID, 
 			AsyncCallback<Void> callback);
 	
 	void cleanup(String docKey, AsyncCallback<Void> callback);
+	
+	void getID(AsyncCallback<String> id);
 }
 
